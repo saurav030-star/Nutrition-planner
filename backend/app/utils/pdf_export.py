@@ -203,7 +203,8 @@ def generate_meal_plan_pdf(
     
     # 5. Verification & Compliance Footer
     remarks = verification.get("remarks", "Constraint verifier validated all nutritional boundaries.")
-    footer_text = f"<b>Multi-Agent Verification Seal:</b> {remarks}<br/><i>B.Tech CSE (AI/ML) OJT Capstone Project | Saurav Sharma & Nitish Kumar</i>"
+    footer_text = f"<b>Multi-Agent Verification Seal:</b> {remarks}<br/><i>Enterprise Autonomous Nutrition Planning & Validation System</i>"
+
     elements.append(Paragraph(footer_text, ParagraphStyle('Footer', parent=body_style, textColor=colors.HexColor('#059669'))))
     
     doc.build(elements)

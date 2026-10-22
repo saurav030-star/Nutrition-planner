@@ -33,7 +33,7 @@ export default function LoginPage() {
   const handleQuickDemoLogin = async () => {
     setLoading(true);
     setError("");
-    const demoEmail = "saurav.sharma@nutrition.ai";
+    const demoEmail = "demo@nutrition.ai";
     const demoPassword = "DemoPassword2025!";
 
     try {
@@ -48,7 +48,7 @@ export default function LoginPage() {
         const regRes = await api.register({
           email: demoEmail,
           password: demoPassword,
-          full_name: "Saurav Sharma (Student Lead)",
+          full_name: "Demo User",
         });
         setAuthToken(regRes.access_token);
         setStoredUser(regRes.user);
@@ -81,7 +81,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* 1-Click Demo Login for Mentors / Reviewers */}
+        {/* 1-Click Demo Login */}
         <button
           type="button"
           onClick={handleQuickDemoLogin}
@@ -89,8 +89,9 @@ export default function LoginPage() {
           className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition"
         >
           <Sparkles className="w-4 h-4" />
-          <span>Quick 1-Click Login (Evaluator & Demo Profile)</span>
+          <span>Quick 1-Click Login (Demo Profile)</span>
         </button>
+
 
         <div className="relative flex py-1 items-center">
           <div className="flex-grow border-t border-slate-200"></div>

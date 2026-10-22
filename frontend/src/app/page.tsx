@@ -21,8 +21,9 @@ export default function Home() {
       <section className="relative overflow-hidden pt-16 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-6 shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-          <span>OJT Capstone Project | FoodTech Sector Automation</span>
+          <span>Autonomous Multi-Agent Intelligence | FoodTech Sector Automation</span>
         </div>
+
 
         <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight max-w-4xl mx-auto leading-tight sm:leading-tight">
           Enterprise-Grade Autonomous{" "}
@@ -60,25 +61,26 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Quick Academic Meta Pill */}
+        {/* Enterprise System Pillars */}
         <div className="mt-12 pt-8 border-t border-slate-200 max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Students</span>
-            <span className="text-xs font-semibold text-slate-900">Saurav Sharma & Nitish Kumar</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">AI Orchestration</span>
+            <span className="text-xs font-semibold text-slate-900">LangGraph StateGraph DAG</span>
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Registration</span>
-            <span className="text-xs font-semibold text-slate-900">251810700281 / 251810700125</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Clinical Model</span>
+            <span className="text-xs font-semibold text-slate-900">Mifflin-St Jeor & TDEE</span>
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Program</span>
-            <span className="text-xs font-semibold text-slate-900">B.Tech CSE (AI/ML) 2025–2029</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Safety Guarantee</span>
+            <span className="text-xs font-semibold text-slate-900">100% Allergen Shield</span>
           </div>
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Core Frameworks</span>
-            <span className="text-xs font-semibold text-slate-900">LangGraph • FastAPI • Next.js</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Architecture</span>
+            <span className="text-xs font-semibold text-slate-900">Next.js 14 & FastAPI REST</span>
           </div>
         </div>
+
       </section>
 
       {/* 4 Core Must-Have Modules */}

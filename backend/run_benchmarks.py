@@ -3,8 +3,8 @@
 TaskBench Evaluation Benchmark Runner
 Assesses system correctness, constraint-adherence accuracy, and agent execution times.
 Project: Enterprise-Grade AI Nutrition Planner
-Students: Saurav Sharma (251810700281) & Nitish Kumar (251810700125)
 """
+
 
 import sys
 import os
@@ -19,10 +19,10 @@ from app.api.benchmark import run_benchmark_suite
 def main():
     print("=" * 80)
     print("🚀 ENTERPRISE-GRADE AI NUTRITION PLANNER: TASKBENCH EVALUATION BENCHMARK")
-    print("   Year & Section: B.Tech CSE (AI/ML) 2025-2029")
-    print("   Student Researchers: Saurav Sharma (251810700281) | Nitish Kumar (251810700125)")
+    print("   Autonomous Multi-Agent LangGraph Constraint & Latency Audit")
     print("=" * 80)
     print("Executing Autonomous Multi-Agent LangGraph Benchmark Test Suite...\n")
+
     
     summary = run_benchmark_suite()
     

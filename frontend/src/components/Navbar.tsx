@@ -24,7 +24,7 @@ export default function Navbar() {
     setMounted(true);
     const token = getAuthToken();
     if (token) {
-      setUser(getStoredUser() || { email: "Demo User", full_name: "Saurav Sharma" });
+      setUser(getStoredUser() || { email: "User", full_name: "Nutrition Pro" });
     }
   }, [pathname]);
 
@@ -43,16 +43,8 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-      {/* Top Academic Sub-banner */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 text-center flex flex-wrap justify-center items-center gap-x-4 border-b border-slate-800">
-        <span className="font-semibold text-emerald-400">Enterprise AI Nutrition Planner</span>
-        <span className="hidden sm:inline text-slate-600">|</span>
-        <span>B.Tech CSE (AI/ML) 2025–2029</span>
-        <span className="hidden sm:inline text-slate-600">|</span>
-        <span className="text-slate-200">Developers: Saurav Sharma (251810700281) & Nitish Kumar (251810700125)</span>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 font-bold text-lg text-slate-900 hover:opacity-90 transition">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">

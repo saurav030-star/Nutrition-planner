@@ -3,8 +3,8 @@
 # ==============================================================================
 # Enterprise-Grade AI Nutrition Planner (FoodTech Sector Automation)
 # One-Click Local Startup Script
-# Researchers: Saurav Sharma (251810700281) & Nitish Kumar (251810700125)
-# Year & Section: B.Tech CSE (AI/ML) 2025–2029
+# Autonomous Multi-Agent Nutrition Planning & Validation System
+
 # ==============================================================================
 
 set -e

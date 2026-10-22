@@ -13,9 +13,9 @@ app = FastAPI(
     version=settings.VERSION,
     description=(
         "Enterprise-Grade AI Nutrition Planner (FoodTech Sector Automation). "
-        "Autonomous Multi-Agent architecture using LangGraph, FastAPI, and Next.js. "
-        "Project by Saurav Sharma (251810700281) & Nitish Kumar (251810700125)."
+        "Autonomous Multi-Agent architecture using LangGraph, FastAPI, and Next.js."
     ),
+
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc"
@@ -43,10 +43,9 @@ def root():
         "status": "online",
         "system": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "docs": f"{settings.API_V1_STR}/docs",
-        "students": ["Saurav Sharma (251810700281)", "Nitish Kumar (251810700125)"],
-        "stream": "B.Tech CSE (AI/ML) 2025-2029"
+        "docs": f"{settings.API_V1_STR}/docs"
     }
+
 
 @app.get("/health")
 def health_check():

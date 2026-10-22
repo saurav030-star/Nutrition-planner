@@ -20,16 +20,17 @@ export default function RootLayout({
           <div className="min-h-screen flex flex-col">
             <Navbar />
             <main className="flex-1">{children}</main>
-            <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 py-8 px-4 text-center text-xs space-y-2">
+            <footer className="bg-slate-950 text-slate-400 border-t border-slate-800 py-6 px-4 text-center text-xs">
               <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div>
-                  <span className="font-semibold text-slate-200">Enterprise AI Nutrition Planner</span> &copy; 2025–2029. FoodTech Sector Automation.
+                  <span className="font-semibold text-slate-200">Enterprise AI Nutrition Planner</span> &copy; 2025. FoodTech Sector Automation.
                 </div>
-                <div className="text-slate-400">
-                  Developed by <span className="text-emerald-400 font-medium">Saurav Sharma</span> (251810700281) & <span className="text-emerald-400 font-medium">Nitish Kumar</span> (251810700125)
+                <div className="text-slate-500">
+                  Autonomous Multi-Agent Nutrition Platform
                 </div>
               </div>
             </footer>
+
           </div>
         </QueryProvider>
       </body>
