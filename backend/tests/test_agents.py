@@ -38,3 +38,31 @@ def test_langgraph_pipeline_execution():
     for day in result["generated_days"]:
         for meal in day["meals"]:
             assert "peanuts" not in [a.lower() for a in meal.get("allergens", [])]
+
+def test_vegetarian_strictly_excludes_eggs():
+    input_state = {
+        "age": 25,
+        "gender": "male",
+        "weight": 70.0,
+        "height": 175.0,
+        "activity_level": "moderately_active",
+        "health_goal": "weight_loss",
+        "diet_type": "vegetarian",
+        "allergies": [],
+        "duration_days": 7
+    }
+    
+    result = run_nutrition_pipeline(input_state)
+    assert result["is_valid"] is True
+    assert len(result["generated_days"]) == 7
+    
+    for day in result["generated_days"]:
+        for meal in day["meals"]:
+            meal_allergens = [a.lower() for a in meal.get("allergens", [])]
+            assert "eggs" not in meal_allergens, f"Found eggs allergen in vegetarian meal: {meal['name']}"
+            assert "egg" not in meal_allergens, f"Found egg allergen in vegetarian meal: {meal['name']}"
+            assert "poached egg" not in meal["name"].lower()
+            assert "omelet" not in meal["name"].lower()
+            for ing in meal.get("ingredients", []):
+                assert "egg" not in ing["name"].lower(), f"Found egg ingredient '{ing['name']}' in vegetarian meal '{meal['name']}'"
+

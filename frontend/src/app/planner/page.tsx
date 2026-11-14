@@ -274,12 +274,14 @@ export default function PlannerPage() {
               >
                 <option value="balanced">Balanced / High-Protein</option>
                 <option value="mediterranean">Mediterranean</option>
-                <option value="vegetarian">Vegetarian</option>
+                <option value="vegetarian">Vegetarian (Strictly Egg-Free & Meat-Free)</option>
+                <option value="eggetarian">Eggetarian (Vegetarian with Eggs)</option>
                 <option value="vegan">100% Plant-Based Vegan</option>
                 <option value="keto">Ketogenic (Very Low Carb)</option>
                 <option value="paleo">Paleo Clean Eating</option>
                 <option value="gluten_free">Strict Gluten-Free</option>
               </select>
+
             </div>
 
             {/* Allergies Checklist */}

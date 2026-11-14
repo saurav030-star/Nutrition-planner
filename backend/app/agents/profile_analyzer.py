@@ -60,7 +60,7 @@ def profile_analyzer_node(state: AgentState) -> Dict[str, Any]:
         goal_delta = GOAL_ADJUSTMENTS.get(goal.lower(), 0.0)
         target_calories = round(max(1200.0, tdee + goal_delta), 1)  # safe metabolic floor
         
-    # 4. Parse Allergens
+    # 4. Parse Allergens & Strict Dietary Framework Exclusions
     raw_allergies = state.get("allergies", [])
     if isinstance(raw_allergies, str):
         parsed_allergens = [a.strip().lower() for a in raw_allergies.split(",") if a.strip()]
@@ -68,6 +68,18 @@ def profile_analyzer_node(state: AgentState) -> Dict[str, Any]:
         parsed_allergens = [str(a).strip().lower() for a in raw_allergies if str(a).strip()]
     else:
         parsed_allergens = []
+
+    # Enforce pure vegetarian / vegan dietary boundaries
+    diet = state.get("diet_type", "").lower()
+    if diet == "vegetarian":
+        for item in ["eggs", "egg", "meat", "fish", "shellfish", "poultry"]:
+            if item not in parsed_allergens:
+                parsed_allergens.append(item)
+    elif diet == "vegan":
+        for item in ["dairy", "eggs", "egg", "meat", "fish", "shellfish", "poultry"]:
+            if item not in parsed_allergens:
+                parsed_allergens.append(item)
+
         
     log_entry = {
         "agent": "ProfileAnalyzer",

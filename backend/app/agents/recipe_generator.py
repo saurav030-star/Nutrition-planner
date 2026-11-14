@@ -107,7 +107,7 @@ def recipe_generator_node(state: AgentState) -> Dict[str, Any]:
     dinner_candidates = search_recipes(diet_type=diet_type, meal_type="dinner", exclude_allergens=parsed_allergens)
     snack_candidates = search_recipes(diet_type=diet_type, meal_type="snack", exclude_allergens=parsed_allergens)
     
-    # Fallback to balanced if specific diet candidates are sparse
+    # Fallback only if no candidates found, strictly respecting allergen & diet exclusions
     if not breakfast_candidates:
         breakfast_candidates = search_recipes(diet_type="balanced", meal_type="breakfast", exclude_allergens=parsed_allergens)
     if not lunch_candidates:
@@ -122,10 +122,11 @@ def recipe_generator_node(state: AgentState) -> Dict[str, Any]:
         day_name = DAYS_OF_WEEK[day_idx % len(DAYS_OF_WEEK)]
         
         # Pick candidate with cyclic offset
-        b_raw = breakfast_candidates[day_idx % len(breakfast_candidates)] if breakfast_candidates else RECIPE_DATABASE[2]
-        l_raw = lunch_candidates[day_idx % len(lunch_candidates)] if lunch_candidates else RECIPE_DATABASE[1]
-        d_raw = dinner_candidates[day_idx % len(dinner_candidates)] if dinner_candidates else RECIPE_DATABASE[0]
-        s_raw = snack_candidates[day_idx % len(snack_candidates)] if snack_candidates else RECIPE_DATABASE[11]
+        b_raw = breakfast_candidates[day_idx % len(breakfast_candidates)]
+        l_raw = lunch_candidates[day_idx % len(lunch_candidates)]
+        d_raw = dinner_candidates[day_idx % len(dinner_candidates)]
+        s_raw = snack_candidates[day_idx % len(snack_candidates)]
+
         
         # Scale to meal calorie allocations
         b_meal = scale_recipe_to_target(b_raw, target_calories * MEAL_DISTRIBUTION["breakfast"]["cal_pct"])

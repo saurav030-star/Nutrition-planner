@@ -26,7 +26,9 @@ def constraint_verifier_node(state: AgentState) -> Dict[str, Any]:
     allergen_violations: List[str] = []
     daily_deviations: List[float] = []
     
-    # 1. Audit Allergen Ingestion
+    diet = state.get("diet_type", "").lower()
+    
+    # 1. Audit Allergen Ingestion & Strict Dietary Protocol
     for day in generated_days:
         day_num = day.get("day_number", 1)
         for meal in day.get("meals", []):
@@ -41,6 +43,19 @@ def constraint_verifier_node(state: AgentState) -> Dict[str, Any]:
                         "description": violation_text,
                         "severity": "CRITICAL"
                     })
+                    
+            if diet == "vegetarian":
+                has_egg = "eggs" in meal_allergens or "egg" in meal_allergens or any("egg" in ing.get("name", "").lower() for ing in meal.get("ingredients", []))
+                if has_egg:
+                    violation_text = f"Day {day_num} {meal.get('meal_type')} '{meal.get('name')}' contains eggs (Strict Vegetarian protocol violation)"
+                    if violation_text not in allergen_violations:
+                        allergen_violations.append(violation_text)
+                    violations.append({
+                        "rule": "VEGETARIAN_EGG_EXCLUSION",
+                        "description": violation_text,
+                        "severity": "CRITICAL"
+                    })
+
                     
         # 2. Audit Daily Caloric Tolerance
         day_calories = day.get("total_calories", 0.0)
