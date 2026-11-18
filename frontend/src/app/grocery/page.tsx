@@ -20,6 +20,7 @@ export default function GroceryPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -40,6 +41,19 @@ export default function GroceryPage() {
       [itemKey]: !prev[itemKey],
     }));
   };
+
+  const handleDownloadPdf = async () => {
+    if (!activePlan) return;
+    try {
+      setDownloading(true);
+      await api.downloadMealPlanPdfBlob(activePlan.id, `Nutrition_Plan_${activePlan.id}.pdf`);
+    } catch (_) {
+      window.open(api.downloadMealPlanPdfUrl(activePlan.id), "_blank");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
 
   if (!mounted) return null;
 
@@ -66,15 +80,14 @@ export default function GroceryPage() {
 
         {activePlan && (
           <div className="flex items-center gap-3">
-            <a
-              href={api.downloadMealPlanPdfUrl(activePlan.id)}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow transition"
+            <button
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow transition disabled:opacity-50"
             >
               <Download className="w-4 h-4 text-emerald-400" />
-              <span>Download Publication PDF</span>
-            </a>
+              <span>{downloading ? "Downloading..." : "Download Publication PDF"}</span>
+            </button>
             <button
               onClick={() => window.print()}
               className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 shadow-sm transition"
@@ -84,6 +97,7 @@ export default function GroceryPage() {
             </button>
           </div>
         )}
+
       </div>
 
       {activePlan ? (

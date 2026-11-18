@@ -80,7 +80,30 @@ export const api = {
   deleteMealPlan: (id: number) => request<any>(`/meal-plans/${id}`, { method: "DELETE" }),
   
   // PDF Export
-  downloadMealPlanPdfUrl: (id: number) => `${API_BASE}/meal-plans/${id}/pdf`,
+  downloadMealPlanPdfUrl: (id: number) => {
+    const token = getAuthToken();
+    return `${API_BASE}/meal-plans/${id}/pdf${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+  },
+  downloadMealPlanPdfBlob: async (id: number, filename = `Nutrition_Plan_${id}.pdf`) => {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const url = `${API_BASE}/meal-plans/${id}/pdf${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      throw new Error(`Failed to download PDF (HTTP ${response.status})`);
+    }
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+  },
+
 
   // Logs
   getNutritionLogs: (days = 7) => request<any[]>(`/logs?days=${days}`),

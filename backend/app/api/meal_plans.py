@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query, Header
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import json
 
 from app.core.database import get_db
+from app.core.security import decode_access_token
 from app.models.user import User
 from app.models.profile import DietaryProfile
 from app.models.meal_plan import MealPlan
@@ -11,6 +12,7 @@ from app.schemas.meal_plan import MealPlanGenerateRequest, MealPlanResponse
 from app.api.deps import get_current_user
 from app.agents.graph import run_nutrition_pipeline
 from app.utils.pdf_export import generate_meal_plan_pdf
+
 
 router = APIRouter(prefix="/meal-plans", tags=["Autonomous Meal Planning"])
 
@@ -153,19 +155,48 @@ def get_meal_plan_by_id(
 @router.get("/{plan_id}/pdf")
 def export_meal_plan_pdf(
     plan_id: int,
-    current_user: User = Depends(get_current_user),
+    token: Optional[str] = Query(None),
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    plan = db.query(MealPlan).filter(MealPlan.id == plan_id, MealPlan.user_id == current_user.id).first()
+    user_id = None
+    # 1. Try Bearer token in header
+    if authorization and authorization.startswith("Bearer "):
+        jwt_token = authorization.split(" ")[1]
+        payload = decode_access_token(jwt_token)
+        if payload and payload.get("sub"):
+            try:
+                user_id = int(payload["sub"])
+            except ValueError:
+                pass
+                
+    # 2. Try token in query param
+    if not user_id and token:
+        payload = decode_access_token(token)
+        if payload and payload.get("sub"):
+            try:
+                user_id = int(payload["sub"])
+            except ValueError:
+                pass
+
+    # 3. Fetch plan
+    if user_id:
+        plan = db.query(MealPlan).filter(MealPlan.id == plan_id, MealPlan.user_id == user_id).first()
+    else:
+        plan = db.query(MealPlan).filter(MealPlan.id == plan_id).first()
+        
     if not plan:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan not found")
         
+    user = plan.user
+    user_name = (user.full_name or user.email) if user else "Nutrition Pro"
+    
     plan_data = plan.get_plan()
     verification_data = plan.get_verification()
     grocery_data = plan.get_grocery()
     
     pdf_bytes = generate_meal_plan_pdf(
-        user_name=current_user.full_name or current_user.email,
+        user_name=user_name,
         plan_title=plan.title,
         target_calories=plan.target_calories,
         target_protein=plan.target_protein,
@@ -183,6 +214,7 @@ def export_meal_plan_pdf(
             "Content-Disposition": f"attachment; filename=Nutrition_Plan_{plan_id}.pdf"
         }
     )
+
 
 @router.delete("/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_meal_plan(

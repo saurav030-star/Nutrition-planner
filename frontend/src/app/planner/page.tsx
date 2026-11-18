@@ -51,6 +51,7 @@ export default function PlannerPage() {
   // Agent Visualizer simulation stage
   const [agentStage, setAgentStage] = useState<any>("idle");
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -59,6 +60,19 @@ export default function PlannerPage() {
       router.push("/login");
     }
   }, [router]);
+
+  const handleDownloadPdf = async () => {
+    if (!activePlan) return;
+    try {
+      setDownloading(true);
+      await api.downloadMealPlanPdfBlob(activePlan.id, `Nutrition_Plan_${activePlan.id}.pdf`);
+    } catch (_) {
+      window.open(api.downloadMealPlanPdfUrl(activePlan.id), "_blank");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
 
   // Fetch active meal plan
   const { data: activePlan, isLoading: planLoading } = useQuery<MealPlan>({
@@ -377,15 +391,14 @@ export default function PlannerPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <a
-                    href={api.downloadMealPlanPdfUrl(activePlan.id)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow"
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={downloading}
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow disabled:opacity-50"
                   >
                     <Download className="w-4 h-4 text-emerald-400" />
-                    <span>Download PDF</span>
-                  </a>
+                    <span>{downloading ? "Downloading..." : "Download PDF"}</span>
+                  </button>
                   <Link
                     href="/grocery"
                     className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200 transition"
@@ -394,6 +407,7 @@ export default function PlannerPage() {
                     <span>Grocery Aisle Manifest</span>
                   </Link>
                 </div>
+
               </div>
 
               {/* Day Selector Tabs */}
