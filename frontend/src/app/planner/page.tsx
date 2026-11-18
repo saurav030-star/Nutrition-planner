@@ -18,7 +18,8 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Activity, 
-  SlidersHorizontal 
+  SlidersHorizontal,
+  Info
 } from "lucide-react";
 
 const ALLERGEN_OPTIONS = [
@@ -40,13 +41,17 @@ export default function PlannerPage() {
   // Form State
   const [age, setAge] = useState(25);
   const [gender, setGender] = useState("male");
-  const [weight, setWeight] = useState(72.0);
-  const [height, setHeight] = useState(178.0);
+  const [weight, setWeight] = useState(70.0);
+  const [height, setHeight] = useState(175.0);
   const [activityLevel, setActivityLevel] = useState("moderately_active");
   const [healthGoal, setHealthGoal] = useState("weight_loss");
-  const [dietType, setDietType] = useState("balanced");
+  const [dietType, setDietType] = useState("vegetarian");
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const [durationDays, setDurationDays] = useState(7);
+
+  // Error & Validation states
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Agent Visualizer simulation stage
   const [agentStage, setAgentStage] = useState<any>("idle");
@@ -73,7 +78,6 @@ export default function PlannerPage() {
     }
   };
 
-
   // Fetch active meal plan
   const { data: activePlan, isLoading: planLoading } = useQuery<MealPlan>({
     queryKey: ["activeMealPlan"],
@@ -90,11 +94,11 @@ export default function PlannerPage() {
     if (profile) {
       setAge(profile.age || 25);
       setGender(profile.gender || "male");
-      setWeight(profile.weight || 72.0);
-      setHeight(profile.height || 178.0);
+      setWeight(profile.weight || 70.0);
+      setHeight(profile.height || 175.0);
       setActivityLevel(profile.activity_level || "moderately_active");
       setHealthGoal(profile.health_goal || "weight_loss");
-      setDietType(profile.diet_type || "balanced");
+      setDietType(profile.diet_type || "vegetarian");
       if (profile.allergies) {
         const splitted = profile.allergies.split(",").map((a: string) => a.trim().toLowerCase());
         setSelectedAllergies(splitted.filter(Boolean));
@@ -105,6 +109,7 @@ export default function PlannerPage() {
   // Generate Plan Mutation
   const generateMutation = useMutation({
     mutationFn: async (payload: any) => {
+      setGenerationError(null);
       // First update profile
       await api.updateProfile({
         age,
@@ -119,13 +124,13 @@ export default function PlannerPage() {
 
       // Stage visual transitions
       setAgentStage("profile");
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 350));
       setAgentStage("macros");
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 350));
       setAgentStage("recipes");
-      await new Promise((r) => setTimeout(r, 500));
-      setAgentStage("verifier");
       await new Promise((r) => setTimeout(r, 400));
+      setAgentStage("verifier");
+      await new Promise((r) => setTimeout(r, 350));
 
       const res = await api.generateMealPlan(payload);
       return res;
@@ -137,13 +142,34 @@ export default function PlannerPage() {
       queryClient.invalidateQueries({ queryKey: ["nutritionLogs"] });
       setSelectedDayIndex(0);
     },
-    onError: () => {
+    onError: (err: any) => {
       setAgentStage("idle");
+      const detail = err?.response?.data?.detail;
+      const msg = typeof detail === "string" ? detail : detail?.message || "LangGraph constraint verification could not find a compliant plan after 3 retries.";
+      setGenerationError(msg);
     },
   });
 
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+
+    if (!age || age < 14 || age > 100) {
+      errors.age = "Age must be between 14 and 100.";
+    }
+    if (!weight || weight < 30 || weight > 250) {
+      errors.weight = "Weight must be between 30 and 250 kg.";
+    }
+    if (!height || height < 100 || height > 250) {
+      errors.height = "Height must be between 100 and 250 cm.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
+
     generateMutation.mutate({
       duration_days: durationDays,
       diet_type_override: dietType,
@@ -163,6 +189,20 @@ export default function PlannerPage() {
 
   const currentDay: DayMealPlan | undefined = activePlan?.days?.[selectedDayIndex];
 
+  // Calculate actual plan average daily calories and macros across generated days
+  const actualAvgCal = activePlan?.days?.length 
+    ? Math.round(activePlan.days.reduce((acc, d) => acc + d.total_calories, 0) / activePlan.days.length)
+    : Math.round(activePlan?.target_calories || 2000);
+  const actualAvgProt = activePlan?.days?.length 
+    ? (activePlan.days.reduce((acc, d) => acc + d.total_protein, 0) / activePlan.days.length).toFixed(1)
+    : (activePlan?.target_protein || 150).toFixed(1);
+  const actualAvgCarbs = activePlan?.days?.length 
+    ? (activePlan.days.reduce((acc, d) => acc + d.total_carbs, 0) / activePlan.days.length).toFixed(1)
+    : (activePlan?.target_carbs || 200).toFixed(1);
+  const actualAvgFats = activePlan?.days?.length 
+    ? (activePlan.days.reduce((acc, d) => acc + d.total_fats, 0) / activePlan.days.length).toFixed(1)
+    : (activePlan?.target_fats || 65).toFixed(1);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
@@ -175,7 +215,7 @@ export default function PlannerPage() {
           Multi-Agent Nutrition Generator
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl">
-          Profile Analyzer computes clinical BMR/TDEE &rarr; Macro Optimizer allocates exact grams &rarr; Recipe Generator synthesizes multi-day schedules &rarr; Constraint Verifier executes allergen audits with retry loops.
+          Profile Analyzer computes clinical BMR/TDEE &rarr; Macro Optimizer allocates exact grams &rarr; Recipe Generator synthesizes complete 7-day schedules &rarr; Constraint Verifier executes allergen & dietary protocol audits with self-correction retry loops.
         </p>
       </div>
 
@@ -185,6 +225,17 @@ export default function PlannerPage() {
         verificationScore={activePlan?.verification?.confidence_score || 100}
         retryCount={activePlan?.verification?.retry_count || 0}
       />
+
+      {/* Error Alert Banner if 422 LangGraph Constraint Verification Rejection */}
+      {generationError && (
+        <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-start gap-3 text-rose-900 text-xs">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-bold text-rose-950">Multi-Agent Constraint Verification Alert</h4>
+            <p className="text-rose-700 leading-relaxed">{generationError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Layout: Configuration Form & Meal Plan Results */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -208,8 +259,9 @@ export default function PlannerPage() {
                   max={100}
                   value={age}
                   onChange={(e) => setAge(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full px-3 py-1.5 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${formErrors.age ? "border-rose-400 bg-rose-50/50" : "border-slate-200"}`}
                 />
+                {formErrors.age && <p className="text-[10px] text-rose-600 mt-1">{formErrors.age}</p>}
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Gender</label>
@@ -233,8 +285,9 @@ export default function PlannerPage() {
                   step="0.5"
                   value={weight}
                   onChange={(e) => setWeight(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full px-3 py-1.5 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${formErrors.weight ? "border-rose-400 bg-rose-50/50" : "border-slate-200"}`}
                 />
+                {formErrors.weight && <p className="text-[10px] text-rose-600 mt-1">{formErrors.weight}</p>}
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Height (cm)</label>
@@ -242,8 +295,9 @@ export default function PlannerPage() {
                   type="number"
                   value={height}
                   onChange={(e) => setHeight(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className={`w-full px-3 py-1.5 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${formErrors.height ? "border-rose-400 bg-rose-50/50" : "border-slate-200"}`}
                 />
+                {formErrors.height && <p className="text-[10px] text-rose-600 mt-1">{formErrors.height}</p>}
               </div>
             </div>
 
@@ -259,7 +313,7 @@ export default function PlannerPage() {
                 <option value="lightly_active">Lightly Active (1-3 days/week)</option>
                 <option value="moderately_active">Moderately Active (3-5 days/week)</option>
                 <option value="very_active">Very Active (6-7 days/week)</option>
-                <option value="extra_active">Extra Active (Athlete / physical job)</option>
+                <option value="extra_active">Extra Active (Athlete / heavy training)</option>
               </select>
             </div>
 
@@ -278,27 +332,24 @@ export default function PlannerPage() {
               </select>
             </div>
 
-            {/* Diet Type */}
+            {/* Dietary Framework */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">Dietary Framework</label>
               <select
                 value={dietType}
                 onChange={(e) => setDietType(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                className="w-full px-3 py-1.5 text-xs rounded-xl border border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30 font-medium text-slate-900"
               >
-                <option value="balanced">Balanced / High-Protein</option>
-                <option value="mediterranean">Mediterranean</option>
                 <option value="vegetarian">Vegetarian (Strictly Egg-Free & Meat-Free)</option>
-                <option value="eggetarian">Eggetarian (Vegetarian with Eggs)</option>
                 <option value="vegan">100% Plant-Based Vegan</option>
-                <option value="keto">Ketogenic (Very Low Carb)</option>
-                <option value="paleo">Paleo Clean Eating</option>
+                <option value="balanced">Balanced Whole Foods</option>
+                <option value="high_protein">High-Protein Hypertrophy (35% Protein)</option>
+                <option value="low_carb">Low-Carb / Ketogenic</option>
                 <option value="gluten_free">Strict Gluten-Free</option>
               </select>
-
             </div>
 
-            {/* Allergies Checklist */}
+            {/* Strict Allergen Exclusions */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-2">
                 Strict Allergen Exclusions ({selectedAllergies.length} selected)
@@ -326,10 +377,10 @@ export default function PlannerPage() {
               </div>
             </div>
 
-            {/* Duration Days */}
+            {/* Plan Duration */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Plan Duration (Days)
+                Plan Duration
               </label>
               <div className="flex gap-2">
                 {[1, 3, 7].map((days) => (
@@ -339,7 +390,7 @@ export default function PlannerPage() {
                     onClick={() => setDurationDays(days)}
                     className={`flex-1 py-1.5 text-xs font-semibold rounded-xl border transition ${
                       durationDays === days
-                        ? "bg-emerald-600 text-white border-emerald-600"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                         : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
@@ -357,7 +408,7 @@ export default function PlannerPage() {
               {generateMutation.isPending ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Executing LangGraph Pipeline...</span>
+                  <span>Executing Multi-Agent LangGraph...</span>
                 </>
               ) : (
                 <>
@@ -373,24 +424,31 @@ export default function PlannerPage() {
         <div className="lg:col-span-8 space-y-6">
           {activePlan ? (
             <div className="space-y-6">
-              {/* Plan Action Bar */}
+              {/* Plan Action Bar with Target vs Actual Separation */}
               <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                       Verified Plan
                     </span>
-                    <span className="text-xs text-slate-400">
-                      Adherence: <b>{activePlan.adherence_score}%</b>
+                    <span className="text-xs text-slate-600 font-medium">
+                      Calculated Adherence: <b className="text-emerald-700">{activePlan.adherence_score}%</b>
                     </span>
                   </div>
                   <h2 className="text-lg font-bold text-slate-900 mt-1">{activePlan.title}</h2>
-                  <p className="text-xs text-slate-500">
-                    Target: {Math.round(activePlan.target_calories)} kcal • {activePlan.target_protein}g P • {activePlan.target_carbs}g C • {activePlan.target_fats}g F
-                  </p>
+                  
+                  {/* Separate Target vs Actual Nutritional Breakdown */}
+                  <div className="text-xs text-slate-500 mt-2 space-y-0.5">
+                    <div>
+                      <span className="font-semibold text-slate-700">Target Calories & Macros:</span> {Math.round(activePlan.target_calories)} kcal • {activePlan.target_protein}g P • {activePlan.target_carbs}g C • {activePlan.target_fats}g F
+                    </div>
+                    <div>
+                      <span className="font-semibold text-emerald-700">Actual Calculated Daily Avg:</span> {actualAvgCal} kcal • {actualAvgProt}g P • {actualAvgCarbs}g C • {actualAvgFats}g F
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={handleDownloadPdf}
                     disabled={downloading}
@@ -404,35 +462,42 @@ export default function PlannerPage() {
                     className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200 transition"
                   >
                     <ShoppingCart className="w-4 h-4 text-emerald-600" />
-                    <span>Grocery Aisle Manifest</span>
+                    <span>Grocery Manifest</span>
                   </Link>
                 </div>
-
               </div>
 
-              {/* Day Selector Tabs */}
+              {/* Complete Seven-Day Navigation Bar (Grid cols 7 on md/lg desktop: Monday to Sunday) */}
               {activePlan.days && activePlan.days.length > 0 && (
-                <div className="flex overflow-x-auto gap-2 pb-2">
-                  {activePlan.days.map((day, idx) => (
-                    <button
-                      key={day.day_number}
-                      onClick={() => setSelectedDayIndex(idx)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-2 border ${
-                        selectedDayIndex === idx
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Day {day.day_number} ({day.day_name.slice(0, 3)})</span>
-                    </button>
-                  ))}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+                    <span>Select Day ({activePlan.days.length} Days Generated)</span>
+                    <span className="text-emerald-600">Active: Day {selectedDayIndex + 1} ({activePlan.days[selectedDayIndex]?.day_name})</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 pb-1">
+                    {activePlan.days.map((day, idx) => (
+                      <button
+                        key={day.day_number}
+                        onClick={() => setSelectedDayIndex(idx)}
+                        className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border text-center ${
+                          selectedDayIndex === idx
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-200"
+                        }`}
+                      >
+                        <Calendar className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">
+                          {day.day_name.slice(0, 3)} (D{day.day_number})
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Day Nutrition Banner */}
+              {/* Day Nutrition Banner with Independent Daily Totals */}
               {currentDay && (
-                <div className="bg-emerald-950 text-emerald-100 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs">
+                <div className="bg-emerald-950 text-emerald-100 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs shadow-sm">
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
                       Day {currentDay.day_number} Daily Total
@@ -441,27 +506,27 @@ export default function PlannerPage() {
                   </div>
 
                   <div className="flex items-center gap-4 text-xs font-semibold">
-                    <div>
-                      <span className="text-emerald-400 text-[10px] block uppercase">Calories</span>
+                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
+                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Calories</span>
                       <span>{Math.round(currentDay.total_calories)} kcal</span>
                     </div>
-                    <div>
-                      <span className="text-emerald-400 text-[10px] block uppercase">Protein</span>
+                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
+                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Protein</span>
                       <span>{currentDay.total_protein}g</span>
                     </div>
-                    <div>
-                      <span className="text-emerald-400 text-[10px] block uppercase">Carbs</span>
+                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
+                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Carbs</span>
                       <span>{currentDay.total_carbs}g</span>
                     </div>
-                    <div>
-                      <span className="text-emerald-400 text-[10px] block uppercase">Fats</span>
+                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
+                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Fats</span>
                       <span>{currentDay.total_fats}g</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Meal Cards Grid */}
+              {/* Meal Cards Grid (Breakfast, Lunch, Dinner, Snack) */}
               {currentDay && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentDay.meals.map((meal) => (

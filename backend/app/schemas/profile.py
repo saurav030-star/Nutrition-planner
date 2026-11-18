@@ -19,10 +19,10 @@ class DietaryProfileCreate(DietaryProfileBase):
     pass
 
 class DietaryProfileUpdate(BaseModel):
-    age: Optional[int] = None
+    age: Optional[int] = Field(default=None, ge=14, le=100)
     gender: Optional[str] = None
-    weight: Optional[float] = None
-    height: Optional[float] = None
+    weight: Optional[float] = Field(default=None, ge=30.0, le=250.0)
+    height: Optional[float] = Field(default=None, ge=100.0, le=250.0)
     activity_level: Optional[str] = None
     health_goal: Optional[str] = None
     diet_type: Optional[str] = None

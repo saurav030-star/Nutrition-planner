@@ -5,26 +5,36 @@ Follows evidence-based sports nutrition:
 - Protein: 4 kcal/g
 - Carbohydrates: 4 kcal/g
 - Fats: 9 kcal/g
+
+Supports all 5 clinical dietary frameworks:
+- Vegetarian (Lacto-Vegetarian)
+- 100% Plant-Based Vegan
+- Balanced Whole Foods
+- High-Protein Hypertrophy
+- Low-Carb / Ketogenic
 """
 
 from typing import Dict, Any
 from app.agents.state import AgentState
 
-# Macro split presets by diet type and goal (Protein %, Carbs %, Fats %)
+# Macro split presets by dietary framework and goal (Protein %, Carbs %, Fats %)
 MACRO_PRESETS = {
+    "balanced": {"protein": 0.30, "carbs": 0.40, "fats": 0.30},
+    "high_protein": {"protein": 0.35, "carbs": 0.35, "fats": 0.30},
+    "low_carb": {"protein": 0.35, "carbs": 0.20, "fats": 0.45},
+    "vegetarian": {"protein": 0.28, "carbs": 0.45, "fats": 0.27},
+    "vegan": {"protein": 0.25, "carbs": 0.50, "fats": 0.25},
     "keto": {"protein": 0.25, "carbs": 0.05, "fats": 0.70},
-    "low_carb": {"protein": 0.35, "carbs": 0.25, "fats": 0.40},
-    "muscle_gain": {"protein": 0.30, "carbs": 0.45, "fats": 0.25},
-    "weight_loss": {"protein": 0.35, "carbs": 0.35, "fats": 0.30},
-    "athletic_performance": {"protein": 0.25, "carbs": 0.55, "fats": 0.20},
     "mediterranean": {"protein": 0.25, "carbs": 0.45, "fats": 0.30},
-    "balanced": {"protein": 0.30, "carbs": 0.40, "fats": 0.30}
+    "weight_loss": {"protein": 0.35, "carbs": 0.35, "fats": 0.30},
+    "muscle_gain": {"protein": 0.30, "carbs": 0.45, "fats": 0.25},
+    "athletic_performance": {"protein": 0.25, "carbs": 0.55, "fats": 0.20}
 }
 
 def macro_optimizer_node(state: AgentState) -> Dict[str, Any]:
     """
     Macro Optimizer Agent Node for LangGraph.
-    Calculates exact gram targets for protein, carbohydrates, and fats.
+    Calculates exact gram targets for protein, carbohydrates, and fats based on calories and framework.
     """
     logs = list(state.get("agent_logs", []))
     
@@ -33,15 +43,11 @@ def macro_optimizer_node(state: AgentState) -> Dict[str, Any]:
     health_goal = state.get("health_goal", "weight_loss").lower()
     weight_kg = state.get("weight", 70.0)
     
-    # Select macro split preset
-    if diet_type == "keto":
-        split = MACRO_PRESETS["keto"]
-    elif diet_type == "low_carb":
-        split = MACRO_PRESETS["low_carb"]
+    # Priority: explicit diet_type presets, then health_goal, fallback to balanced
+    if diet_type in MACRO_PRESETS:
+        split = MACRO_PRESETS[diet_type]
     elif health_goal in MACRO_PRESETS:
         split = MACRO_PRESETS[health_goal]
-    elif diet_type in MACRO_PRESETS:
-        split = MACRO_PRESETS[diet_type]
     else:
         split = MACRO_PRESETS["balanced"]
         

@@ -1,144 +1,267 @@
 """
 Enterprise Culinary & Clinical Nutrition Database
 Grounded in clinical nutritional guidelines (Mifflin-St Jeor, WHO macronutrient guidelines)
-and verified culinary recipes across diverse dietary frameworks.
+and verified culinary recipes across diverse dietary frameworks:
+- Strict Vegetarian (Lacto-Vegetarian: dairy allowed, strictly NO eggs, NO meat, NO fish/seafood)
+- 100% Plant-Based Vegan (Zero animal products, zero dairy, zero eggs)
+- Balanced Whole Foods
+- High-Protein Hypertrophy
+- Low-Carb / Ketogenic
 """
 
 from typing import List, Dict, Any
 
+# Authoritative Allergen to Ingredient Substring Mapping for rigorous cross-contact audit
+ALLERGEN_INGREDIENT_MAP: Dict[str, List[str]] = {
+    "peanuts": ["peanut", "groundnut", "peanut butter"],
+    "tree_nuts": ["almond", "walnut", "cashew", "pistachio", "pecan", "hazelnut", "brazil nut", "macadamia"],
+    "dairy": ["milk", "dairy", "cheese", "yogurt", "paneer", "butter", "ghee", "whey", "curd", "cream", "ricotta", "feta", "parmigiano", "parmesan"],
+    "gluten": ["gluten", "wheat", "sourdough", "bread", "farro", "pasta", "barley", "rye", "flour", "penne"],
+    "shellfish": ["shellfish", "shrimp", "prawn", "crab", "lobster", "clam", "mussel", "oyster", "scallop"],
+    "eggs": ["egg", "eggs", "albumin", "mayonnaise", "poached egg", "omelet"],
+    "soy": ["soy", "soya", "tofu", "edamame", "tempeh", "miso", "tamari"],
+    "fish": ["fish", "salmon", "tuna", "cod", "tilapia", "trout", "halibut", "sardine", "anchovy"]
+}
+
+# Strict dietary framework exclusions
+FRAMEWORK_FORBIDDEN_KEYWORDS: Dict[str, List[str]] = {
+    "vegetarian": [
+        "chicken", "beef", "turkey", "pork", "fish", "salmon", "tuna", "cod", "bacon", 
+        "meat", "seafood", "shrimp", "egg", "eggs", "duck", "lamb", "anchovy"
+    ],
+    "vegan": [
+        "chicken", "beef", "turkey", "pork", "fish", "salmon", "tuna", "cod", "bacon", 
+        "meat", "seafood", "shrimp", "egg", "eggs", "duck", "lamb", "anchovy",
+        "milk", "dairy", "cheese", "yogurt", "paneer", "butter", "ghee", "whey", "curd", "cream", "ricotta", "feta"
+    ]
+}
+
+PLANT_MILK_KEYWORDS = ["almond milk", "coconut milk", "soy milk", "oat milk", "plant milk", "cashew milk"]
+
 RECIPE_DATABASE: List[Dict[str, Any]] = [
-    # --- BALANCED / MEDITERRANEAN ---
+    # =========================================================================
+    # STRICT VEGETARIAN (LACTO-VEGETARIAN) - PURE VEG (NO EGGS, NO MEAT, NO FISH)
+    # =========================================================================
     {
-        "id": "med_lemon_herb_salmon",
-        "name": "Pan-Seared Lemon Herb Salmon with Quinoa",
-        "meal_type": "dinner",
-        "diet_types": ["balanced", "mediterranean", "gluten_free"],
-        "allergens": ["fish"],
-        "calories": 540,
-        "protein": 42.0,
+        "id": "veg_paneer_bhurji_roti",
+        "name": "High-Protein Scrambled Paneer Bhurji with Whole Wheat Roti",
+        "meal_type": "breakfast",
+        "diet_types": ["vegetarian", "balanced", "high_protein"],
+        "allergens": ["dairy", "gluten"],
+        "calories": 445.0,
+        "protein": 26.0,
         "carbs": 38.0,
-        "fats": 22.0,
+        "fats": 23.0,
+        "prep_time_minutes": 10,
+        "cook_time_minutes": 12,
+        "description": "Crumbled fresh malai paneer sautéed with cumin seeds, ginger, onions, tomatoes, and turmeric, served with two soft whole wheat rotis.",
+        "ingredients": [
+            {"name": "Fresh Crumbled Paneer", "quantity": 110, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 290.0, "protein": 20.0, "carbs": 4.0, "fats": 22.0},
+            {"name": "Whole Wheat Roti", "quantity": 2, "unit": "pieces", "aisle": "Grains & Bakery", "calories": 140.0, "protein": 5.0, "carbs": 30.0, "fats": 1.0},
+            {"name": "Diced Onions & Tomatoes", "quantity": 60, "unit": "g", "aisle": "Vegetables", "calories": 15.0, "protein": 1.0, "carbs": 4.0, "fats": 0.0}
+        ],
+        "instructions": [
+            "Heat a non-stick pan, temper cumin seeds and grated ginger in a dash of oil.",
+            "Add finely chopped onions and tomatoes, sautéing until soft and aromatic.",
+            "Add turmeric, chili powder, and crumbled fresh paneer. Toss gently for 3-4 minutes.",
+            "Garnish with freshly chopped cilantro and serve hot with two whole wheat rotis."
+        ]
+    },
+    {
+        "id": "veg_dal_tadka_brown_rice",
+        "name": "Homestyle Yellow Moong & Masoor Dal Tadka with Steamed Brown Rice",
+        "meal_type": "lunch",
+        "diet_types": ["vegetarian", "vegan", "balanced", "gluten_free"],
+        "allergens": [],
+        "calories": 510.0,
+        "protein": 22.5,
+        "carbs": 82.0,
+        "fats": 10.0,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 25,
+        "description": "Slow-simmered yellow moong and pink masoor lentils tempered with cumin, garlic, and ripe tomatoes, served alongside fluffy brown basmati rice.",
+        "ingredients": [
+            {"name": "Yellow Moong & Masoor Dal", "quantity": 80, "unit": "g", "aisle": "Pulses & Legumes", "calories": 270.0, "protein": 19.0, "carbs": 46.0, "fats": 1.5},
+            {"name": "Steamed Brown Basmati Rice", "quantity": 140, "unit": "g", "aisle": "Grains & Bakery", "calories": 175.0, "protein": 3.5, "carbs": 36.0, "fats": 1.5},
+            {"name": "Cold-Pressed Mustard Oil & Cumin Tadka", "quantity": 8, "unit": "ml", "aisle": "Spices & Oils", "calories": 65.0, "protein": 0.0, "carbs": 0.0, "fats": 7.0}
+        ],
+        "instructions": [
+            "Pressure cook yellow lentils with water, turmeric, and sea salt until smooth and creamy.",
+            "In a small pan, temper cumin seeds, minced garlic, and chopped tomatoes in cold-pressed oil.",
+            "Pour hot tempering over cooked dal and simmer for 3 minutes.",
+            "Serve hot poured over a bed of warm steamed brown basmati rice."
+        ]
+    },
+    {
+        "id": "veg_chickpea_protein_bowl",
+        "name": "Spiced Roasted Chickpea Protein Bowl with Quinoa & Lemon Tahini",
+        "meal_type": "lunch",
+        "diet_types": ["vegetarian", "vegan", "balanced", "high_protein", "gluten_free"],
+        "allergens": [],
+        "calories": 490.0,
+        "protein": 23.0,
+        "carbs": 82.0,
+        "fats": 14.0,
         "prep_time_minutes": 15,
         "cook_time_minutes": 20,
-        "description": "Wild Alaskan salmon filet seared with extra virgin olive oil, fresh dill, lemon zest, served atop fluffy tri-color quinoa and roasted asparagus.",
+        "description": "Oven-roasted spiced kabuli chana, nutty tri-color quinoa, roasted sweet potatoes, and massaged kale dressed in creamy lemon tahini.",
         "ingredients": [
-            {"name": "Salmon Filet", "quantity": 180, "unit": "g", "aisle": "Meat & Seafood"},
-            {"name": "Tri-Color Quinoa", "quantity": 60, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Asparagus Spears", "quantity": 120, "unit": "g", "aisle": "Produce"},
-            {"name": "Extra Virgin Olive Oil", "quantity": 15, "unit": "ml", "aisle": "Pantry & Spices"},
-            {"name": "Fresh Lemon Juice & Dill", "quantity": 15, "unit": "ml", "aisle": "Produce"}
+            {"name": "Cooked Chickpeas (Kabuli Chana)", "quantity": 160, "unit": "g", "aisle": "Pulses & Legumes", "calories": 240.0, "protein": 14.0, "carbs": 40.0, "fats": 3.5},
+            {"name": "Cooked Tri-Color Quinoa", "quantity": 110, "unit": "g", "aisle": "Grains & Bakery", "calories": 130.0, "protein": 4.5, "carbs": 24.0, "fats": 2.0},
+            {"name": "Roasted Sweet Potato & Kale", "quantity": 100, "unit": "g", "aisle": "Vegetables", "calories": 70.0, "protein": 2.0, "carbs": 16.0, "fats": 0.5},
+            {"name": "Lemon Tahini Dressing", "quantity": 15, "unit": "ml", "aisle": "Spices & Oils", "calories": 50.0, "protein": 2.5, "carbs": 2.0, "fats": 8.0}
         ],
         "instructions": [
-            "Rinse quinoa and simmer in 120ml water for 15 minutes until tender.",
-            "Season salmon filet with salt, pepper, and fresh dill.",
-            "Heat olive oil in a skillet over medium-high heat and sear salmon for 4 minutes per side.",
-            "Toss asparagus in pan for 3 minutes until vibrant and tender-crisp.",
-            "Plate quinoa, top with seared salmon and drizzle fresh lemon juice."
+            "Toss chickpeas and diced sweet potato with cumin, paprika, and light olive oil.",
+            "Roast at 200°C for 20 minutes until chickpeas are crisp and potatoes tender.",
+            "Layer cooked quinoa and massaged kale into a bowl.",
+            "Top with warm roasted chickpeas, sweet potatoes, and drizzle creamy lemon tahini."
         ]
     },
     {
-        "id": "med_greek_chicken_bowl",
-        "name": "Mediterranean Herb Chicken & Farro Bowl",
-        "meal_type": "lunch",
-        "diet_types": ["balanced", "mediterranean"],
-        "allergens": ["dairy"],
-        "calories": 510,
-        "protein": 45.0,
-        "carbs": 44.0,
-        "fats": 16.0,
+        "id": "veg_tofu_tikka_curry",
+        "name": "Aromatic Coconut Tofu Curry with Sautéed Bell Peppers",
+        "meal_type": "dinner",
+        "diet_types": ["vegetarian", "vegan", "balanced", "high_protein", "gluten_free", "low_carb", "keto"],
+        "allergens": ["soy"],
+        "calories": 475.0,
+        "protein": 32.0,
+        "carbs": 28.0,
+        "fats": 26.0,
         "prep_time_minutes": 15,
         "cook_time_minutes": 15,
-        "description": "Grilled marinated chicken breast sliced over nutty farro, Persian cucumbers, cherry tomatoes, kalamata olives, and light sheep's feta.",
+        "description": "Pan-seared organic firm tofu cubes simmered in a coconut-tomato masala reduction with crisp bell peppers and green peas.",
         "ingredients": [
-            {"name": "Chicken Breast", "quantity": 170, "unit": "g", "aisle": "Meat & Seafood"},
-            {"name": "Cooked Farro", "quantity": 120, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Persian Cucumbers", "quantity": 80, "unit": "g", "aisle": "Produce"},
-            {"name": "Cherry Tomatoes", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Kalamata Olives", "quantity": 25, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Crumbled Feta Cheese", "quantity": 30, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Olive Oil & Oregano Vinaigrette", "quantity": 15, "unit": "ml", "aisle": "Pantry & Spices"}
+            {"name": "Organic Extra Firm Tofu", "quantity": 180, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 250.0, "protein": 26.0, "carbs": 5.0, "fats": 15.0},
+            {"name": "Bell Peppers & Sweet Peas", "quantity": 110, "unit": "g", "aisle": "Vegetables", "calories": 65.0, "protein": 4.0, "carbs": 13.0, "fats": 0.5},
+            {"name": "Light Coconut Milk & Tomato Curry", "quantity": 120, "unit": "ml", "aisle": "Spices & Oils", "calories": 160.0, "protein": 2.0, "carbs": 10.0, "fats": 10.5}
         ],
         "instructions": [
-            "Season chicken breast with oregano, garlic, salt, and black pepper.",
-            "Grill over medium heat for 6-7 minutes per side until internal temperature reaches 74°C (165°F).",
-            "In a bowl, layer warm farro, diced cucumber, and halved cherry tomatoes.",
-            "Slice chicken breast and arrange on top.",
-            "Garnish with kalamata olives, crumbled feta, and light oregano vinaigrette."
+            "Press tofu, cut into cubes, and sear in a hot skillet until golden on all sides.",
+            "Add bell peppers and peas, sauteing for 3 minutes.",
+            "Pour in simmered tomato coconut sauce and season with garam masala and ginger.",
+            "Simmer for 5 minutes until flavors meld; serve warm."
         ]
     },
     {
-        "id": "med_avocado_berry_toast",
-        "name": "Artisan Sourdough Avocado Toast with Poached Eggs",
-        "meal_type": "breakfast",
-        "diet_types": ["balanced", "mediterranean", "eggetarian"],
-        "allergens": ["gluten", "eggs"],
-        "calories": 420,
-        "protein": 21.0,
-        "carbs": 36.0,
-        "fats": 20.0,
-        "prep_time_minutes": 10,
-        "cook_time_minutes": 10,
-        "description": "Toasted sourdough topped with freshly mashed Hass avocado, microgreens, chili flakes, and two pasture-raised soft poached eggs.",
+        "id": "veg_palak_paneer_rice",
+        "name": "Classic Palak Paneer with Brown Basmati Rice & Cucumber Kachumber",
+        "meal_type": "dinner",
+        "diet_types": ["vegetarian", "balanced", "high_protein", "gluten_free"],
+        "allergens": ["dairy"],
+        "calories": 535.0,
+        "protein": 31.0,
+        "carbs": 43.0,
+        "fats": 27.5,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 20,
+        "description": "Fresh cottage cheese paneer cubes simmered in spiced pureed baby spinach and fenugreek gravy, served with brown rice and cucumber kachumber.",
         "ingredients": [
-            {"name": "Artisan Sourdough Bread", "quantity": 2, "unit": "slices", "aisle": "Bakery & Grains"},
-            {"name": "Hass Avocado", "quantity": 70, "unit": "g", "aisle": "Produce"},
-            {"name": "Pasture-Raised Eggs", "quantity": 2, "unit": "whole", "aisle": "Dairy & Refrigerated"},
-            {"name": "Microgreens & Hemp Seeds", "quantity": 15, "unit": "g", "aisle": "Produce"},
-            {"name": "Red Pepper Flakes & Sea Salt", "quantity": 2, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Fresh Paneer Cubes", "quantity": 130, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 340.0, "protein": 24.0, "carbs": 4.0, "fats": 26.0},
+            {"name": "Blanched Pureed Spinach (Palak)", "quantity": 140, "unit": "g", "aisle": "Vegetables", "calories": 35.0, "protein": 4.0, "carbs": 5.0, "fats": 0.5},
+            {"name": "Steamed Brown Basmati Rice", "quantity": 120, "unit": "g", "aisle": "Grains & Bakery", "calories": 150.0, "protein": 3.0, "carbs": 32.0, "fats": 1.0},
+            {"name": "Kachumber Cucumber & Lemon", "quantity": 50, "unit": "g", "aisle": "Vegetables", "calories": 10.0, "protein": 0.0, "carbs": 2.0, "fats": 0.0}
         ],
         "instructions": [
-            "Toast sourdough slices until golden and crisp.",
-            "Mash avocado with a squeeze of fresh lemon, pinch of sea salt, and chili flakes.",
-            "Gently poach eggs in simmering water with a dash of white vinegar for 3 minutes.",
-            "Spread mashed avocado over toast, crown each slice with a poached egg, and scatter microgreens."
+            "Blanch baby spinach in boiling water for 2 minutes, plunge into ice water, and puree with green chilies.",
+            "In a pan, temper cumin and garlic in a teaspoon of ghee; add tomato onion paste.",
+            "Pour pureed spinach, add cubed paneer, and simmer gently on low heat for 5 minutes.",
+            "Serve hot paired with steamed brown basmati rice and refreshing cucumber kachumber."
         ]
     },
     {
-        "id": "veg_paneer_avocado_toast",
-        "name": "Artisan Sourdough Avocado Toast with Spiced Grilled Paneer",
-        "meal_type": "breakfast",
-        "diet_types": ["vegetarian", "balanced", "mediterranean"],
-        "allergens": ["gluten", "dairy"],
-        "calories": 430,
-        "protein": 22.0,
-        "carbs": 36.0,
-        "fats": 21.0,
-        "prep_time_minutes": 10,
-        "cook_time_minutes": 8,
-        "description": "Crisp artisan sourdough toast spread with zesty mashed Hass avocado, crowned with golden pan-seared spiced paneer cubes, hemp seeds, and fresh microgreens.",
+        "id": "veg_soya_chunks_curry",
+        "name": "High-Protein Soya Chunks Curry with Whole Wheat Roti & Salad",
+        "meal_type": "lunch",
+        "diet_types": ["vegetarian", "vegan", "balanced", "high_protein"],
+        "allergens": ["soy", "gluten"],
+        "calories": 480.0,
+        "protein": 36.0,
+        "carbs": 62.0,
+        "fats": 10.5,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 20,
+        "description": "Nutrela high-protein soya chunks rehydrated and simmered in an aromatic onion-tomato curry with peas, served with two whole wheat rotis.",
         "ingredients": [
-            {"name": "Artisan Sourdough Bread", "quantity": 2, "unit": "slices", "aisle": "Bakery & Grains"},
-            {"name": "Hass Avocado", "quantity": 70, "unit": "g", "aisle": "Produce"},
-            {"name": "Fresh Paneer (Cubed)", "quantity": 90, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Microgreens & Hemp Seeds", "quantity": 15, "unit": "g", "aisle": "Produce"},
-            {"name": "Chili Flakes, Turmeric & Sea Salt", "quantity": 3, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Nutrela Soya Chunks (dry wt 50g)", "quantity": 50, "unit": "g", "aisle": "Pulses & Legumes", "calories": 175.0, "protein": 26.0, "carbs": 16.0, "fats": 0.5},
+            {"name": "Whole Wheat Roti", "quantity": 2, "unit": "pieces", "aisle": "Grains & Bakery", "calories": 140.0, "protein": 5.0, "carbs": 30.0, "fats": 1.0},
+            {"name": "Green Peas & Tomato Onion Gravy", "quantity": 120, "unit": "g", "aisle": "Vegetables", "calories": 95.0, "protein": 5.0, "carbs": 16.0, "fats": 1.5},
+            {"name": "Cold-Pressed Olive Oil & Spices", "quantity": 8, "unit": "ml", "aisle": "Spices & Oils", "calories": 70.0, "protein": 0.0, "carbs": 0.0, "fats": 7.5}
         ],
         "instructions": [
-            "Toast sourdough slices until crisp and golden.",
-            "Lightly sear cubed paneer in a non-stick pan with a touch of ghee, turmeric, and pinch of salt until edges are golden.",
-            "Mash avocado with fresh lime juice, sea salt, and crushed chili flakes.",
-            "Spread avocado over toast, top with warm spiced paneer, microgreens, and toasted hemp seeds."
+            "Boil soya chunks in salted water for 5 minutes, rinse in cold water, and squeeze out excess moisture thoroughly.",
+            "Sauté onions, ginger-garlic paste, and tomatoes with turmeric and coriander powder until fragrant.",
+            "Add soya chunks and green peas, coat in spices, and pour 150ml water.",
+            "Simmer for 10 minutes until thick and luscious; serve warm with whole wheat rotis."
+        ]
+    },
+    {
+        "id": "veg_moong_sprouts_salad",
+        "name": "Tangy Moong & Kala Chana Sprouts Salad with Pomegranate",
+        "meal_type": "snack",
+        "diet_types": ["vegetarian", "vegan", "balanced", "high_protein", "gluten_free", "low_carb", "keto"],
+        "allergens": [],
+        "calories": 210.0,
+        "protein": 13.0,
+        "carbs": 34.0,
+        "fats": 2.5,
+        "prep_time_minutes": 10,
+        "cook_time_minutes": 0,
+        "description": "Crisp sprouted green moong and black chana tossed with diced cucumbers, ruby pomegranate arils, roasted cumin, and fresh lemon juice.",
+        "ingredients": [
+            {"name": "Sprouted Green Moong & Black Chana", "quantity": 120, "unit": "g", "aisle": "Pulses & Legumes", "calories": 130.0, "protein": 11.0, "carbs": 21.0, "fats": 1.0},
+            {"name": "Pomegranate Arils", "quantity": 30, "unit": "g", "aisle": "Fruits", "calories": 25.0, "protein": 0.5, "carbs": 6.0, "fats": 0.5},
+            {"name": "Diced Cucumbers & Tomatoes", "quantity": 60, "unit": "g", "aisle": "Vegetables", "calories": 15.0, "protein": 0.5, "carbs": 3.0, "fats": 0.0},
+            {"name": "Roasted Cumin & Fresh Lemon Dressing", "quantity": 15, "unit": "ml", "aisle": "Spices & Oils", "calories": 40.0, "protein": 1.0, "carbs": 4.0, "fats": 1.0}
+        ],
+        "instructions": [
+            "In a salad bowl, combine freshly sprouted moong and black chana.",
+            "Add diced cucumbers, ripe tomatoes, and sweet pomegranate arils.",
+            "Sprinkle roasted cumin powder, chaat masala, and squeeze fresh lemon juice.",
+            "Toss well and serve immediately as a crisp, protein-rich snack."
+        ]
+    },
+    {
+        "id": "veg_roasted_makhana_cashews",
+        "name": "Himalayan Pink Salt Roasted Makhana & Crisp Cashews",
+        "meal_type": "snack",
+        "diet_types": ["vegetarian", "vegan", "balanced", "gluten_free", "low_carb", "keto"],
+        "allergens": ["tree_nuts"],
+        "calories": 235.0,
+        "protein": 6.5,
+        "carbs": 26.0,
+        "fats": 10.5,
+        "prep_time_minutes": 3,
+        "cook_time_minutes": 5,
+        "description": "Organic lotus seeds (foxnuts/makhana) and whole cashews slow-roasted in cold-pressed oil with Himalayan pink salt, turmeric, and cracked black pepper.",
+        "ingredients": [
+            {"name": "Organic Lotus Seeds (Makhana)", "quantity": 35, "unit": "g", "aisle": "Other Items", "calories": 125.0, "protein": 3.5, "carbs": 22.0, "fats": 0.5},
+            {"name": "Raw Whole Cashews", "quantity": 15, "unit": "g", "aisle": "Other Items", "calories": 85.0, "protein": 3.0, "carbs": 4.0, "fats": 7.0},
+            {"name": "Cold-Pressed Oil, Turmeric & Pink Salt", "quantity": 3, "unit": "g", "aisle": "Spices & Oils", "calories": 25.0, "protein": 0.0, "carbs": 0.0, "fats": 3.0}
+        ],
+        "instructions": [
+            "Heat a flat-bottom pan over medium-low heat with a drop of cold-pressed oil.",
+            "Add makhana and cashews, stirring continuously for 4-5 minutes until audibly crispy.",
+            "Dust with Himalayan pink salt, turmeric, and cracked black pepper; toss evenly and serve."
         ]
     },
     {
         "id": "veg_masala_besan_chilla",
         "name": "High-Protein Spiced Besan Chilla with Paneer & Mint Chutney",
         "meal_type": "breakfast",
-        "diet_types": ["vegetarian", "balanced", "gluten_free"],
+        "diet_types": ["vegetarian", "balanced", "gluten_free", "high_protein"],
         "allergens": ["dairy"],
-        "calories": 420,
-        "protein": 24.0,
-        "carbs": 46.0,
-        "fats": 15.0,
+        "calories": 420.0,
+        "protein": 26.0,
+        "carbs": 40.0,
+        "fats": 16.0,
         "prep_time_minutes": 10,
         "cook_time_minutes": 10,
         "description": "Savory gram flour (chickpea) crepes loaded with grated carrots, bell peppers, fresh coriander, stuffed with crumbled paneer and paired with cooling mint yogurt chutney.",
         "ingredients": [
-            {"name": "Gram Flour (Besan)", "quantity": 60, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Crumbled Fresh Paneer", "quantity": 70, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Grated Carrots & Onions", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Mint & Cilantro Yogurt Chutney", "quantity": 40, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Cumin, Ajwain & Turmeric", "quantity": 3, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Gram Flour (Besan)", "quantity": 60, "unit": "g", "aisle": "Grains & Bakery", "calories": 225.0, "protein": 13.0, "carbs": 35.0, "fats": 3.0},
+            {"name": "Crumbled Fresh Paneer", "quantity": 60, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 160.0, "protein": 11.0, "carbs": 2.0, "fats": 12.0},
+            {"name": "Mint & Cilantro Yogurt Chutney", "quantity": 30, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 35.0, "protein": 2.0, "carbs": 3.0, "fats": 1.0}
         ],
         "instructions": [
             "Whisk besan with water, grated vegetables, ajwain, turmeric, and sea salt into a smooth batter.",
@@ -150,85 +273,171 @@ RECIPE_DATABASE: List[Dict[str, Any]] = [
         "id": "veg_greek_yogurt_berry_bowl",
         "name": "Greek Yogurt & Berry Granola Protein Bowl",
         "meal_type": "breakfast",
-        "diet_types": ["vegetarian", "balanced", "mediterranean"],
+        "diet_types": ["vegetarian", "balanced", "high_protein"],
         "allergens": ["dairy", "tree_nuts"],
-        "calories": 410,
-        "protein": 28.0,
-        "carbs": 45.0,
-        "fats": 13.0,
+        "calories": 410.0,
+        "protein": 29.0,
+        "carbs": 46.0,
+        "fats": 12.2,
         "prep_time_minutes": 5,
         "cook_time_minutes": 0,
         "description": "Rich 0% Greek yogurt layered with whole rolled oat granola, organic blueberries, chia seeds, crushed almonds, and a drizzle of raw forest honey.",
         "ingredients": [
-            {"name": "0% Strained Greek Yogurt", "quantity": 200, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Whole Rolled Oat Granola", "quantity": 45, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Fresh Organic Blueberries", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Chia Seeds & Sliced Almonds", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Raw Wildflower Honey", "quantity": 10, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "0% Strained Greek Yogurt", "quantity": 200, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 130.0, "protein": 22.0, "carbs": 8.0, "fats": 0.5},
+            {"name": "Whole Rolled Oat Granola", "quantity": 45, "unit": "g", "aisle": "Grains & Bakery", "calories": 180.0, "protein": 4.0, "carbs": 28.0, "fats": 6.0},
+            {"name": "Fresh Organic Blueberries", "quantity": 60, "unit": "g", "aisle": "Fruits", "calories": 35.0, "protein": 0.5, "carbs": 8.0, "fats": 0.2},
+            {"name": "Chia Seeds & Sliced Almonds", "quantity": 15, "unit": "g", "aisle": "Other Items", "calories": 65.0, "protein": 2.5, "carbs": 2.0, "fats": 5.5}
         ],
         "instructions": [
             "Spoon chilled Greek yogurt into a bowl.",
             "Top with golden oat granola, fresh blueberries, and sliced almonds.",
-            "Finish with a sprinkle of chia seeds and drizzle of wildflower honey."
+            "Finish with a sprinkle of chia seeds."
+        ]
+    },
+    {
+        "id": "veg_paneer_avocado_toast",
+        "name": "Artisan Sourdough Avocado Toast with Spiced Grilled Paneer",
+        "meal_type": "breakfast",
+        "diet_types": ["vegetarian", "balanced", "high_protein"],
+        "allergens": ["gluten", "dairy"],
+        "calories": 485.0,
+        "protein": 22.5,
+        "carbs": 38.0,
+        "fats": 27.5,
+        "prep_time_minutes": 10,
+        "cook_time_minutes": 8,
+        "description": "Crisp artisan sourdough toast spread with zesty mashed Hass avocado, crowned with golden pan-seared spiced paneer cubes, hemp seeds, and fresh microgreens.",
+        "ingredients": [
+            {"name": "Artisan Sourdough Bread", "quantity": 2, "unit": "slices", "aisle": "Grains & Bakery", "calories": 160.0, "protein": 6.0, "carbs": 30.0, "fats": 1.0},
+            {"name": "Hass Avocado", "quantity": 70, "unit": "g", "aisle": "Vegetables", "calories": 115.0, "protein": 1.5, "carbs": 6.0, "fats": 10.5},
+            {"name": "Fresh Paneer (Cubed)", "quantity": 80, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 210.0, "protein": 15.0, "carbs": 2.0, "fats": 16.0}
+        ],
+        "instructions": [
+            "Toast sourdough slices until crisp and golden.",
+            "Lightly sear cubed paneer in a non-stick pan until edges are golden.",
+            "Mash avocado with lime juice and spread over toast, topping with warm spiced paneer."
+        ]
+    },
+    {
+        "id": "veg_paneer_tikka_quinoa_bowl",
+        "name": "Tandoori Spiced Paneer & Tri-Color Quinoa Bowl",
+        "meal_type": "lunch",
+        "diet_types": ["vegetarian", "balanced", "high_protein", "gluten_free"],
+        "allergens": ["dairy"],
+        "calories": 550.0,
+        "protein": 32.0,
+        "carbs": 38.0,
+        "fats": 30.7,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 15,
+        "description": "Succulent cubes of paneer marinated in roasted cumin, turmeric, and Greek yogurt, grilled with bell peppers and layered over fluffy quinoa with cucumbers and mint dressing.",
+        "ingredients": [
+            {"name": "Fresh Paneer", "quantity": 140, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 365.0, "protein": 25.0, "carbs": 4.0, "fats": 28.0},
+            {"name": "Tri-Color Quinoa (Cooked)", "quantity": 130, "unit": "g", "aisle": "Grains & Bakery", "calories": 155.0, "protein": 5.5, "carbs": 28.0, "fats": 2.5},
+            {"name": "Bell Peppers & Cucumber Ribbons", "quantity": 80, "unit": "g", "aisle": "Vegetables", "calories": 30.0, "protein": 1.5, "carbs": 6.0, "fats": 0.2}
+        ],
+        "instructions": [
+            "Toss paneer cubes and bell pepper chunks in tandoori yogurt marinade.",
+            "Sear paneer on a hot griddle for 3 minutes per side until charred and tender.",
+            "Layer warm cooked quinoa into bowl, add fresh crisp cucumber ribbons, and top with paneer."
+        ]
+    },
+    {
+        "id": "veg_mediterranean_falafel_hummus_bowl",
+        "name": "Herbed Falafel & Creamy Tahini Hummus Mediterranean Bowl",
+        "meal_type": "lunch",
+        "diet_types": ["vegetarian", "vegan", "balanced"],
+        "allergens": ["gluten"],
+        "calories": 520.0,
+        "protein": 22.0,
+        "carbs": 68.0,
+        "fats": 18.5,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 15,
+        "description": "Crisp baked parsley-chickpea falafels nestled on smooth house-made garlic hummus, heirloom tomatoes, and whole grain pita wedges.",
+        "ingredients": [
+            {"name": "Baked Chickpea Falafels", "quantity": 5, "unit": "pieces", "aisle": "Pulses & Legumes", "calories": 250.0, "protein": 12.0, "carbs": 30.0, "fats": 9.0},
+            {"name": "Garlic Tahini Hummus", "quantity": 70, "unit": "g", "aisle": "Pulses & Legumes", "calories": 140.0, "protein": 5.0, "carbs": 12.0, "fats": 8.5},
+            {"name": "Whole Wheat Pita", "quantity": 1, "unit": "whole", "aisle": "Grains & Bakery", "calories": 130.0, "protein": 5.0, "carbs": 26.0, "fats": 1.0}
+        ],
+        "instructions": [
+            "Warm falafels and whole wheat pita in oven for 8 minutes at 180°C.",
+            "Spread velvety hummus across base of bowl, arrange falafels and fresh tomatoes, serve with warm pita."
+        ]
+    },
+    {
+        "id": "veg_lentil_paneer_curry",
+        "name": "Yellow Dal Tadka with Pan-Seared Paneer & Brown Basmati",
+        "meal_type": "dinner",
+        "diet_types": ["vegetarian", "balanced", "high_protein", "gluten_free"],
+        "allergens": ["dairy"],
+        "calories": 665.0,
+        "protein": 40.0,
+        "carbs": 72.0,
+        "fats": 24.0,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 20,
+        "description": "Slow-simmered protein-dense yellow lentils tempered with cumin, garlic, and ginger, crowned with pan-seared paneer cubes and served with fragrant brown basmati rice.",
+        "ingredients": [
+            {"name": "Yellow Lentils (Moong & Masoor)", "quantity": 70, "unit": "g", "aisle": "Pulses & Legumes", "calories": 235.0, "protein": 17.0, "carbs": 40.0, "fats": 1.0},
+            {"name": "Fresh Paneer Cubes", "quantity": 110, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 290.0, "protein": 20.0, "carbs": 3.0, "fats": 22.0},
+            {"name": "Steamed Brown Basmati Rice", "quantity": 110, "unit": "g", "aisle": "Grains & Bakery", "calories": 140.0, "protein": 3.0, "carbs": 29.0, "fats": 1.0}
+        ],
+        "instructions": [
+            "Simmer yellow lentils in vegetable broth with turmeric and sea salt until velvety.",
+            "In a skillet, sear paneer cubes until golden brown.",
+            "Pour hot dal over warm brown basmati rice and crown with seared paneer."
+        ]
+    },
+    {
+        "id": "veg_ricotta_spinach_pasta",
+        "name": "Whole Wheat Penne with Fresh Spinach & Italian Ricotta",
+        "meal_type": "dinner",
+        "diet_types": ["vegetarian", "balanced"],
+        "allergens": ["gluten", "dairy"],
+        "calories": 515.0,
+        "protein": 25.0,
+        "carbs": 64.0,
+        "fats": 18.5,
+        "prep_time_minutes": 12,
+        "cook_time_minutes": 15,
+        "description": "Al dente whole wheat penne pasta tossed in garlic olive oil, wilted tender spinach, creamy Italian ricotta, and cracked black pepper.",
+        "ingredients": [
+            {"name": "Whole Wheat Penne Pasta", "quantity": 85, "unit": "g", "aisle": "Grains & Bakery", "calories": 290.0, "protein": 12.0, "carbs": 58.0, "fats": 2.0},
+            {"name": "Fresh Whole Milk Ricotta", "quantity": 90, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 140.0, "protein": 10.0, "carbs": 4.0, "fats": 9.5},
+            {"name": "Baby Spinach & Olive Oil", "quantity": 90, "unit": "g", "aisle": "Vegetables", "calories": 85.0, "protein": 3.0, "carbs": 2.0, "fats": 7.0}
+        ],
+        "instructions": [
+            "Boil penne pasta in salted water for 9 minutes until al dente.",
+            "Sauté minced garlic in olive oil, wilt baby spinach, and toss with pasta and creamy ricotta."
         ]
     },
 
-    # --- VEGETARIAN & VEGAN ---
+    # =========================================================================
+    # 100% PLANT-BASED VEGAN (ZERO ANIMAL / ZERO DAIRY / ZERO EGGS)
+    # =========================================================================
     {
         "id": "vegan_tofu_veggie_stirfry",
         "name": "Crispy Sesame Tofu & Edamame Soba Stir-Fry",
         "meal_type": "dinner",
-        "diet_types": ["vegan", "vegetarian", "balanced"],
-        "allergens": ["soy"],
-        "calories": 480,
-        "protein": 34.0,
-        "carbs": 52.0,
-        "fats": 14.0,
+        "diet_types": ["vegan", "vegetarian", "balanced", "high_protein"],
+        "allergens": ["soy", "gluten"],
+        "calories": 540.0,
+        "protein": 41.0,
+        "carbs": 57.0,
+        "fats": 18.0,
         "prep_time_minutes": 15,
         "cook_time_minutes": 15,
         "description": "Organic firm tofu cubes pan-crisped with shelled edamame, broccoli florets, and bell peppers tossed with buckwheat soba noodles in a ginger-tamari glaze.",
         "ingredients": [
-            {"name": "Organic Extra Firm Tofu", "quantity": 180, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Buckwheat Soba Noodles", "quantity": 70, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Shelled Edamame", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Broccoli & Bell Peppers", "quantity": 120, "unit": "g", "aisle": "Produce"},
-            {"name": "Tamari & Ginger Glaze", "quantity": 20, "unit": "ml", "aisle": "Pantry & Spices"},
-            {"name": "Toasted Sesame Seeds", "quantity": 5, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Organic Extra Firm Tofu", "quantity": 180, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 250.0, "protein": 26.0, "carbs": 5.0, "fats": 15.0},
+            {"name": "Buckwheat Soba Noodles", "quantity": 70, "unit": "g", "aisle": "Grains & Bakery", "calories": 210.0, "protein": 8.0, "carbs": 44.0, "fats": 1.0},
+            {"name": "Broccoli & Shelled Edamame", "quantity": 100, "unit": "g", "aisle": "Vegetables", "calories": 80.0, "protein": 7.0, "carbs": 8.0, "fats": 2.0}
         ],
         "instructions": [
-            "Press tofu to remove excess moisture and cube into bite-sized pieces.",
-            "Boil soba noodles for 4 minutes, drain and rinse under cold water.",
-            "Sear tofu in a hot wok with a touch of sesame oil until all sides are golden brown.",
+            "Press tofu to remove moisture and cube. Sear in hot wok until golden brown.",
             "Add broccoli, bell peppers, and edamame, stir-frying for 3-4 minutes.",
-            "Add soba noodles and ginger-tamari glaze, toss vigorously for 1 minute, sprinkle with sesame seeds."
-        ]
-    },
-    {
-        "id": "vegan_chickpea_buddha_bowl",
-        "name": "Golden Turmeric Chickpea & Sweet Potato Buddha Bowl",
-        "meal_type": "lunch",
-        "diet_types": ["vegan", "vegetarian", "gluten_free"],
-        "allergens": ["sesame"],
-        "calories": 460,
-        "protein": 20.0,
-        "carbs": 66.0,
-        "fats": 12.0,
-        "prep_time_minutes": 15,
-        "cook_time_minutes": 25,
-        "description": "Roasted spiced chickpeas with cinnamon sweet potato wedges, massaged kale, cucumber ribbons, and a creamy lemon tahini drizzle.",
-        "ingredients": [
-            {"name": "Canned Chickpeas (rinsed)", "quantity": 150, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Sweet Potato", "quantity": 130, "unit": "g", "aisle": "Produce"},
-            {"name": "Lacinato Tuscan Kale", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Tahini Paste", "quantity": 20, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Lemon Juice & Cumin", "quantity": 10, "unit": "ml", "aisle": "Produce"}
-        ],
-        "instructions": [
-            "Preheat oven to 200°C (400°F).",
-            "Toss chickpeas and sweet potato wedges with cumin, turmeric, sea salt, and olive oil.",
-            "Roast on a baking sheet for 25 minutes until sweet potato is fork-tender and chickpeas are crisp.",
-            "Massage kale leaves with a drop of olive oil and sea salt until softened.",
-            "Assemble bowl with kale base, sweet potato, crispy chickpeas, and drizzle whisked lemon tahini."
+            "Toss with boiled soba noodles and ginger tamari glaze."
         ]
     },
     {
@@ -237,398 +446,333 @@ RECIPE_DATABASE: List[Dict[str, Any]] = [
         "meal_type": "breakfast",
         "diet_types": ["vegan", "vegetarian", "gluten_free"],
         "allergens": ["tree_nuts"],
-        "calories": 390,
-        "protein": 17.0,
-        "carbs": 55.0,
-        "fats": 11.0,
+        "calories": 390.0,
+        "protein": 13.0,
+        "carbs": 52.0,
+        "fats": 15.0,
         "prep_time_minutes": 5,
         "cook_time_minutes": 0,
         "description": "Gluten-free rolled oats soaked overnight in unsweetened almond milk with chia seeds, pure Madagascar vanilla, topped with fresh blueberries and sliced almonds.",
         "ingredients": [
-            {"name": "Rolled Oats (Gluten-Free)", "quantity": 50, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Chia Seeds", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Unsweetened Almond Milk", "quantity": 180, "unit": "ml", "aisle": "Dairy & Refrigerated"},
-            {"name": "Fresh Blueberries & Strawberries", "quantity": 70, "unit": "g", "aisle": "Produce"},
-            {"name": "Sliced Toasted Almonds", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Plant Protein Powder (Vanilla)", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Rolled Oats (Gluten-Free)", "quantity": 50, "unit": "g", "aisle": "Grains & Bakery", "calories": 190.0, "protein": 6.0, "carbs": 34.0, "fats": 3.0},
+            {"name": "Chia Seeds & Sliced Almonds", "quantity": 25, "unit": "g", "aisle": "Other Items", "calories": 125.0, "protein": 4.5, "carbs": 6.0, "fats": 10.0},
+            {"name": "Unsweetened Almond Milk & Berries", "quantity": 200, "unit": "ml", "aisle": "Dairy & Plant Milks", "calories": 75.0, "protein": 2.5, "carbs": 12.0, "fats": 2.0}
         ],
         "instructions": [
-            "In a mason jar, combine rolled oats, chia seeds, plant protein powder, and almond milk.",
-            "Stir well until smooth, seal and chill in refrigerator overnight (or at least 4 hours).",
-            "In the morning, top with fresh berries, sliced almonds, and a drizzle of pure maple syrup if desired."
+            "In a mason jar, combine rolled oats, chia seeds, and almond milk.",
+            "Seal and chill in refrigerator overnight.",
+            "In the morning, top with fresh berries and sliced almonds."
+        ]
+    },
+    {
+        "id": "vegan_tofu_scramble_toast",
+        "name": "Turmeric Herb Tofu Scramble with Whole Grain Toast",
+        "meal_type": "breakfast",
+        "diet_types": ["vegan", "vegetarian", "balanced", "high_protein"],
+        "allergens": ["soy", "gluten"],
+        "calories": 420.0,
+        "protein": 25.0,
+        "carbs": 44.0,
+        "fats": 15.0,
+        "prep_time_minutes": 10,
+        "cook_time_minutes": 10,
+        "description": "Crumbled organic tofu scrambled with nutritional yeast, turmeric, garlic, baby spinach, and tomatoes, served with whole grain toast.",
+        "ingredients": [
+            {"name": "Organic Extra Firm Tofu", "quantity": 160, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 220.0, "protein": 22.0, "carbs": 4.0, "fats": 13.0},
+            {"name": "Whole Grain Toast", "quantity": 2, "unit": "slices", "aisle": "Grains & Bakery", "calories": 150.0, "protein": 6.0, "carbs": 28.0, "fats": 1.5},
+            {"name": "Baby Spinach & Tomatoes", "quantity": 80, "unit": "g", "aisle": "Vegetables", "calories": 50.0, "protein": 2.0, "carbs": 6.0, "fats": 0.5}
+        ],
+        "instructions": [
+            "Crumble firm tofu into a hot pan with olive oil, turmeric, and black pepper.",
+            "Fold in baby spinach and tomatoes until wilted.",
+            "Serve hot with toasted whole grain slices."
+        ]
+    },
+    {
+        "id": "vegan_chickpea_buddha_bowl",
+        "name": "Golden Turmeric Chickpea & Sweet Potato Buddha Bowl",
+        "meal_type": "lunch",
+        "diet_types": ["vegan", "vegetarian", "gluten_free"],
+        "allergens": [],
+        "calories": 460.0,
+        "protein": 20.0,
+        "carbs": 68.0,
+        "fats": 12.2,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 25,
+        "description": "Roasted spiced chickpeas with cinnamon sweet potato wedges, massaged kale, cucumber ribbons, and a creamy lemon tahini drizzle.",
+        "ingredients": [
+            {"name": "Cooked Chickpeas (rinsed)", "quantity": 150, "unit": "g", "aisle": "Pulses & Legumes", "calories": 225.0, "protein": 13.0, "carbs": 38.0, "fats": 3.0},
+            {"name": "Roasted Sweet Potato", "quantity": 130, "unit": "g", "aisle": "Vegetables", "calories": 115.0, "protein": 2.0, "carbs": 26.0, "fats": 0.2},
+            {"name": "Lacinato Tuscan Kale & Tahini", "quantity": 80, "unit": "g", "aisle": "Vegetables", "calories": 120.0, "protein": 5.0, "carbs": 4.0, "fats": 9.0}
+        ],
+        "instructions": [
+            "Toss chickpeas and sweet potato wedges with cumin and olive oil; roast at 200°C for 25 minutes.",
+            "Massage kale leaves with sea salt and assemble bowl with crispy chickpeas and sweet potato."
         ]
     },
 
-    # --- KETO / LOW CARB ---
-    {
-        "id": "keto_steak_chimichurri",
-        "name": "Grass-Fed Flank Steak with Fresh Chimichurri & Zucchini",
-        "meal_type": "dinner",
-        "diet_types": ["keto", "low_carb", "paleo", "gluten_free"],
-        "allergens": [],
-        "calories": 580,
-        "protein": 48.0,
-        "carbs": 8.0,
-        "fats": 40.0,
-        "prep_time_minutes": 15,
-        "cook_time_minutes": 15,
-        "description": "Char-grilled grass-fed flank steak sliced against the grain, topped with vibrant hand-chopped parsley and oregano chimichurri, served with butter-seared zucchini ribbons.",
-        "ingredients": [
-            {"name": "Grass-Fed Beef Flank Steak", "quantity": 190, "unit": "g", "aisle": "Meat & Seafood"},
-            {"name": "Fresh Italian Parsley & Oregano", "quantity": 30, "unit": "g", "aisle": "Produce"},
-            {"name": "Zucchini Ribbons", "quantity": 150, "unit": "g", "aisle": "Produce"},
-            {"name": "Extra Virgin Olive Oil", "quantity": 25, "unit": "ml", "aisle": "Pantry & Spices"},
-            {"name": "Red Wine Vinegar & Garlic", "quantity": 10, "unit": "ml", "aisle": "Pantry & Spices"}
-        ],
-        "instructions": [
-            "Whisk finely chopped parsley, garlic, oregano, red wine vinegar, olive oil, and red pepper flakes.",
-            "Season flank steak generously with coarse sea salt and cracked black pepper.",
-            "Grill or cast-iron sear over high heat for 4 minutes per side until medium-rare. Rest for 5 minutes.",
-            "Saute zucchini ribbons in pan drippings with a pinch of salt for 2 minutes.",
-            "Slice steak thinly against the grain, spoon chimichurri on top, and serve with zucchini."
-        ]
-    },
+    # =========================================================================
+    # KETO & LOW CARB RECIPES
+    # =========================================================================
     {
         "id": "keto_spinach_feta_omelet",
-        "name": "Fluffy Spinach & Herb Feta Omelet with Avocado",
+        "name": "Fluffy Spinach & Herb Feta Omelet with Sliced Avocado",
         "meal_type": "breakfast",
-        "diet_types": ["keto", "low_carb", "eggetarian", "gluten_free"],
+        "diet_types": ["keto", "low_carb", "gluten_free"],
         "allergens": ["eggs", "dairy"],
-        "calories": 440,
+        "calories": 440.0,
         "protein": 24.0,
         "carbs": 6.0,
         "fats": 36.0,
         "prep_time_minutes": 10,
         "cook_time_minutes": 10,
-        "description": "Three farm eggs whisked with baby spinach and dill, cooked in ghee and folded over creamy goat feta and fresh sliced avocado.",
+        "description": "Three farm eggs whisked with baby spinach and dill, cooked in butter and folded over creamy feta and fresh sliced avocado.",
         "ingredients": [
-            {"name": "Large Farm Fresh Eggs", "quantity": 3, "unit": "whole", "aisle": "Dairy & Refrigerated"},
-            {"name": "Baby Spinach", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Crumbled Goat Feta", "quantity": 35, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Hass Avocado", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Grass-Fed Butter or Ghee", "quantity": 10, "unit": "g", "aisle": "Dairy & Refrigerated"}
+            {"name": "Large Farm Fresh Eggs", "quantity": 3, "unit": "whole", "aisle": "Other Items", "calories": 210.0, "protein": 18.0, "carbs": 1.5, "fats": 15.0},
+            {"name": "Crumbled Goat Feta", "quantity": 35, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 95.0, "protein": 5.0, "carbs": 1.5, "fats": 8.0},
+            {"name": "Hass Avocado & Baby Spinach", "quantity": 90, "unit": "g", "aisle": "Vegetables", "calories": 135.0, "protein": 1.0, "carbs": 3.0, "fats": 13.0}
         ],
         "instructions": [
-            "Whisk eggs with a splash of water, salt, pepper, and chopped fresh dill.",
-            "Melt butter in non-stick pan over medium-low heat; add spinach and wilt for 60 seconds.",
-            "Pour beaten eggs over spinach, swirling the pan to cover evenly.",
-            "When eggs are nearly set, crumble feta across one half, fold in half, and slide onto plate.",
-            "Serve immediately with fresh sliced avocado alongside."
+            "Whisk eggs with sea salt and pepper. Pour into a heated skillet with butter.",
+            "Add spinach, fold over crumbled feta, and serve with sliced avocado."
+        ]
+    },
+    {
+        "id": "keto_chia_hemp_seed_bowl",
+        "name": "Keto Chia & Hemp Heart Breakfast Pudding with Walnuts",
+        "meal_type": "breakfast",
+        "diet_types": ["keto", "low_carb", "vegan", "vegetarian", "gluten_free"],
+        "allergens": ["tree_nuts"],
+        "calories": 395.0,
+        "protein": 18.0,
+        "carbs": 7.0,
+        "fats": 32.0,
+        "prep_time_minutes": 5,
+        "cook_time_minutes": 0,
+        "description": "Chia seeds and shelled hemp hearts soaked in unsweetened almond milk, dusted with Ceylon cinnamon and crowned with crushed raw walnuts.",
+        "ingredients": [
+            {"name": "Shelled Hemp Hearts", "quantity": 30, "unit": "g", "aisle": "Other Items", "calories": 170.0, "protein": 10.0, "carbs": 2.0, "fats": 14.0},
+            {"name": "Chia Seeds", "quantity": 20, "unit": "g", "aisle": "Other Items", "calories": 100.0, "protein": 3.5, "carbs": 2.0, "fats": 6.5},
+            {"name": "Unsweetened Almond Milk", "quantity": 180, "unit": "ml", "aisle": "Dairy & Plant Milks", "calories": 30.0, "protein": 1.0, "carbs": 1.0, "fats": 2.5},
+            {"name": "Raw Walnuts", "quantity": 15, "unit": "g", "aisle": "Other Items", "calories": 95.0, "protein": 2.5, "carbs": 2.0, "fats": 9.0}
+        ],
+        "instructions": [
+            "Whisk hemp hearts, chia seeds, and almond milk with a pinch of cinnamon.",
+            "Chill for 15 minutes to thicken, top with raw walnuts, and enjoy cold."
+        ]
+    },
+    {
+        "id": "keto_steak_chimichurri",
+        "name": "Grass-Fed Flank Steak with Fresh Chimichurri & Zucchini",
+        "meal_type": "dinner",
+        "diet_types": ["low_carb", "keto", "high_protein", "gluten_free"],
+        "allergens": [],
+        "calories": 595.0,
+        "protein": 48.0,
+        "carbs": 8.0,
+        "fats": 42.0,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 15,
+        "description": "Char-grilled grass-fed flank steak sliced thin with herb chimichurri and sautéed zucchini ribbons.",
+        "ingredients": [
+            {"name": "Grass-Fed Beef Flank Steak", "quantity": 190, "unit": "g", "aisle": "Other Items", "calories": 380.0, "protein": 45.0, "carbs": 0.0, "fats": 20.0},
+            {"name": "Zucchini Ribbons & Olive Oil", "quantity": 160, "unit": "g", "aisle": "Vegetables", "calories": 140.0, "protein": 2.5, "carbs": 6.0, "fats": 14.0},
+            {"name": "Fresh Herb Chimichurri", "quantity": 30, "unit": "ml", "aisle": "Spices & Oils", "calories": 75.0, "protein": 0.5, "carbs": 2.0, "fats": 8.0}
+        ],
+        "instructions": [
+            "Grill flank steak over high heat for 4 minutes per side. Sauté zucchini ribbons and serve topped with fresh chimichurri."
         ]
     },
     {
         "id": "keto_caesar_chicken_salad",
-        "name": "Crispy Romaine Grilled Chicken Caesar with Bacon",
+        "name": "Crispy Romaine Grilled Chicken Caesar",
         "meal_type": "lunch",
-        "diet_types": ["keto", "low_carb", "gluten_free"],
-        "allergens": ["dairy", "eggs", "fish"],
-        "calories": 520,
-        "protein": 46.0,
+        "diet_types": ["low_carb", "keto", "high_protein", "gluten_free"],
+        "allergens": ["dairy"],
+        "calories": 540.0,
+        "protein": 48.5,
         "carbs": 5.0,
-        "fats": 35.0,
+        "fats": 30.0,
         "prep_time_minutes": 12,
         "cook_time_minutes": 10,
-        "description": "Tender seasoned chicken breast sliced over crisp chopped romaine hearts, uncured bacon lardons, shaved Parmigiano-Reggiano, and house-made avocado oil Caesar dressing.",
+        "description": "Tender chicken breast sliced over crisp chopped romaine, shaved parmesan, and olive oil Caesar dressing.",
         "ingredients": [
-            {"name": "Chicken Breast", "quantity": 170, "unit": "g", "aisle": "Meat & Seafood"},
-            {"name": "Crisp Romaine Hearts", "quantity": 140, "unit": "g", "aisle": "Produce"},
-            {"name": "Uncured Bacon Crumbles", "quantity": 25, "unit": "g", "aisle": "Meat & Seafood"},
-            {"name": "Shaved Parmigiano-Reggiano", "quantity": 30, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Avocado Oil Caesar Dressing", "quantity": 30, "unit": "ml", "aisle": "Pantry & Spices"}
+            {"name": "Chicken Breast", "quantity": 170, "unit": "g", "aisle": "Other Items", "calories": 280.0, "protein": 42.0, "carbs": 0.0, "fats": 6.0},
+            {"name": "Romaine Hearts & Parmesan", "quantity": 150, "unit": "g", "aisle": "Vegetables", "calories": 110.0, "protein": 6.0, "carbs": 3.0, "fats": 8.0},
+            {"name": "Avocado Oil Caesar Dressing", "quantity": 30, "unit": "ml", "aisle": "Spices & Oils", "calories": 150.0, "protein": 0.5, "carbs": 2.0, "fats": 16.0}
         ],
         "instructions": [
-            "Pan-sear or grill chicken breast until cooked through; slice diagonally.",
-            "Chop crisp romaine hearts, rinse thoroughly and spin dry.",
-            "In a large bowl, toss romaine with half the Caesar dressing until lightly coated.",
-            "Top with sliced warm chicken breast, crispy bacon lardons, and shaved parmesan.",
-            "Drizzle remaining Caesar dressing and crack fresh black pepper over top."
-        ]
-    },
-
-    # --- HIGH PROTEIN / ATHLETIC PERFORMANCE / BULKING ---
-    {
-        "id": "athletic_turkey_sweet_potato",
-        "name": "Lean Ground Turkey Hash with Roasted Sweet Potato",
-        "meal_type": "lunch",
-        "diet_types": ["balanced", "paleo", "gluten_free"],
-        "allergens": [],
-        "calories": 560,
-        "protein": 48.0,
-        "carbs": 54.0,
-        "fats": 16.0,
-        "prep_time_minutes": 15,
-        "cook_time_minutes": 20,
-        "description": "93% lean ground turkey browned with smoked paprika, bell peppers, and caramelized onions, folded into roasted diced sweet potatoes and green beans.",
-        "ingredients": [
-            {"name": "93% Lean Ground Turkey", "quantity": 180, "unit": "g", "aisle": "Meat & Seafood"},
-            {"name": "Roasted Diced Sweet Potato", "quantity": 160, "unit": "g", "aisle": "Produce"},
-            {"name": "Bell Peppers & Onions", "quantity": 90, "unit": "g", "aisle": "Produce"},
-            {"name": "French Green Beans", "quantity": 80, "unit": "g", "aisle": "Produce"},
-            {"name": "Olive Oil & Smoked Paprika", "quantity": 12, "unit": "ml", "aisle": "Pantry & Spices"}
-        ],
-        "instructions": [
-            "Brown ground turkey in a large skillet over medium-high heat with smoked paprika, cumin, and sea salt.",
-            "In parallel, roast diced sweet potatoes at 200°C for 20 minutes until caramelized.",
-            "Add diced bell peppers and onions to the turkey, sauteing for 5 minutes until tender.",
-            "Steam green beans for 3 minutes until crisp-tender.",
-            "Toss roasted sweet potatoes with turkey hash and serve warm."
+            "Pan-sear chicken breast until done. Toss romaine with Caesar dressing and top with sliced chicken and parmesan."
         ]
     },
     {
-        "id": "athletic_protein_pancakes",
-        "name": "Fluffy Whey Protein Oat Pancakes with Maple Berries",
-        "meal_type": "breakfast",
-        "diet_types": ["balanced", "eggetarian"],
-        "allergens": ["dairy", "eggs", "gluten"],
-        "calories": 490,
-        "protein": 40.0,
-        "carbs": 60.0,
-        "fats": 9.0,
-        "prep_time_minutes": 10,
-        "cook_time_minutes": 10,
-        "description": "Golden fluffy pancakes made from whole oat flour, egg whites, and isolate vanilla whey, stacked high and topped with warm berry compote.",
-        "ingredients": [
-            {"name": "Whole Oat Flour", "quantity": 60, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Vanilla Whey Protein Isolate", "quantity": 30, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Liquid Egg Whites", "quantity": 100, "unit": "ml", "aisle": "Dairy & Refrigerated"},
-            {"name": "Baking Powder & Cinnamon", "quantity": 5, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Mixed Wild Berries & Pure Maple", "quantity": 80, "unit": "g", "aisle": "Produce"}
-        ],
-        "instructions": [
-            "Blend oat flour, whey protein, egg whites, baking powder, cinnamon, and 50ml water into a smooth batter.",
-            "Warm a non-stick griddle over medium heat, spray with light oil.",
-            "Pour batter into 3 equal circles; flip when bubbles form on the surface (approx. 2-3 minutes).",
-            "Simmer mixed berries in a small saucepan for 3 minutes until soft and saucy.",
-            "Stack pancakes and pour warm berries over top."
-        ]
-    },
-    {
-        "id": "veg_paneer_tikka_quinoa_bowl",
-        "name": "Tandoori Spiced Paneer & Tri-Color Quinoa Bowl",
-        "meal_type": "lunch",
-        "diet_types": ["vegetarian", "balanced", "mediterranean", "gluten_free"],
-        "allergens": ["dairy"],
-        "calories": 520,
-        "protein": 32.0,
-        "carbs": 46.0,
-        "fats": 22.0,
-        "prep_time_minutes": 15,
-        "cook_time_minutes": 15,
-        "description": "Succulent cubes of paneer marinated in roasted cumin, turmeric, and Greek yogurt, grilled with bell peppers and layered over fluffy quinoa with cucumbers and mint dressing.",
-        "ingredients": [
-            {"name": "Fresh Paneer", "quantity": 140, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Tri-Color Quinoa (Cooked)", "quantity": 130, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Bell Peppers & Red Onion", "quantity": 90, "unit": "g", "aisle": "Produce"},
-            {"name": "Cucumber Ribbons", "quantity": 60, "unit": "g", "aisle": "Produce"},
-            {"name": "Greek Yogurt Tandoori Marinade", "quantity": 30, "unit": "g", "aisle": "Dairy & Refrigerated"}
-        ],
-        "instructions": [
-            "Toss paneer cubes and bell pepper chunks in tandoori yogurt marinade.",
-            "Sear paneer on a smoking hot griddle for 3 minutes per side until charred and tender.",
-            "Layer warm cooked quinoa into bowl, add fresh crisp cucumber ribbons.",
-            "Top with grilled paneer and peppers; garnish with chopped fresh mint."
-        ]
-    },
-    {
-        "id": "veg_mediterranean_falafel_hummus_bowl",
-        "name": "Herbed Falafel & Creamy Tahini Hummus Mediterranean Bowl",
-        "meal_type": "lunch",
-        "diet_types": ["vegetarian", "vegan", "mediterranean"],
-        "allergens": ["sesame"],
-        "calories": 490,
-        "protein": 21.0,
-        "carbs": 62.0,
-        "fats": 18.0,
-        "prep_time_minutes": 15,
-        "cook_time_minutes": 15,
-        "description": "Crisp baked parsley-chickpea falafels nestled on smooth house-made garlic hummus, heirloom tomatoes, pickled turnips, and whole grain pita wedges.",
-        "ingredients": [
-            {"name": "Baked Chickpea Falafels", "quantity": 5, "unit": "pieces", "aisle": "Pantry & Spices"},
-            {"name": "Garlic Tahini Hummus", "quantity": 70, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Whole Wheat Pita", "quantity": 1, "unit": "whole", "aisle": "Bakery & Grains"},
-            {"name": "Cherry Tomatoes & Persian Cucumber", "quantity": 100, "unit": "g", "aisle": "Produce"},
-            {"name": "Kalamata Olives & Tahini Drizzle", "quantity": 20, "unit": "g", "aisle": "Pantry & Spices"}
-        ],
-        "instructions": [
-            "Warm falafels and whole wheat pita in oven for 8 minutes at 180°C.",
-            "Spread velvety hummus across base of bowl.",
-            "Arrange warm falafels, diced cucumber, tomatoes, and kalamata olives on top.",
-            "Drizzle with lemon tahini and serve with warm pita triangles."
-        ]
-    },
-    {
-        "id": "veg_lentil_paneer_curry",
-        "name": "Yellow Dal Tadka with Pan-Seared Paneer & Brown Basmati",
-        "meal_type": "dinner",
-        "diet_types": ["vegetarian", "balanced", "gluten_free"],
-        "allergens": ["dairy"],
-        "calories": 540,
-        "protein": 34.0,
-        "carbs": 58.0,
-        "fats": 18.0,
-        "prep_time_minutes": 15,
-        "cook_time_minutes": 20,
-        "description": "Slow-simmered protein-dense yellow lentils tempered with cumin, garlic, and ginger, crowned with pan-seared paneer cubes and served with fragrant brown basmati rice.",
-        "ingredients": [
-            {"name": "Yellow Lentils (Moong & Masoor)", "quantity": 70, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Fresh Paneer Cubes", "quantity": 120, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Steamed Brown Basmati Rice", "quantity": 120, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Spinach & Tomatoes", "quantity": 80, "unit": "g", "aisle": "Produce"},
-            {"name": "Ghee, Cumin & Ginger Tempered Oil", "quantity": 12, "unit": "ml", "aisle": "Dairy & Refrigerated"}
-        ],
-        "instructions": [
-            "Simmer yellow lentils in vegetable broth with turmeric and sea salt until velvety.",
-            "In a skillet, sear paneer cubes in half the ghee until golden brown.",
-            "Temper cumin seeds, grated ginger, and chopped tomatoes in remaining ghee; fold into dal with baby spinach.",
-            "Pour hot dal over warm brown basmati rice and crown with seared paneer."
-        ]
-    },
-    {
-        "id": "veg_ricotta_spinach_pasta",
-        "name": "Whole Wheat Penne with Fresh Spinach, Italian Ricotta & Walnuts",
-        "meal_type": "dinner",
-        "diet_types": ["vegetarian", "balanced", "mediterranean"],
-        "allergens": ["gluten", "dairy", "tree_nuts"],
-        "calories": 510,
-        "protein": 26.0,
-        "carbs": 64.0,
-        "fats": 17.0,
-        "prep_time_minutes": 12,
-        "cook_time_minutes": 15,
-        "description": "Al dente whole wheat penne pasta tossed in garlic olive oil, wilted tender spinach, creamy Italian ricotta, toasted walnuts, and cracked black pepper.",
-        "ingredients": [
-            {"name": "Whole Wheat Penne Pasta", "quantity": 85, "unit": "g", "aisle": "Bakery & Grains"},
-            {"name": "Fresh Whole Milk Ricotta", "quantity": 90, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Baby Spinach", "quantity": 80, "unit": "g", "aisle": "Produce"},
-            {"name": "Toasted Chopped Walnuts", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Extra Virgin Olive Oil & Garlic", "quantity": 12, "unit": "ml", "aisle": "Pantry & Spices"}
-        ],
-        "instructions": [
-            "Boil penne pasta in salted water for 9 minutes until al dente; reserve 30ml pasta water.",
-            "Saute minced garlic in olive oil, add baby spinach and wilt for 60 seconds.",
-            "Toss pasta and reserved cooking water with sauteed spinach and fold in creamy ricotta.",
-            "Serve immediately topped with toasted chopped walnuts and freshly cracked black pepper."
-        ]
-    },
-    {
-        "id": "veg_roasted_makhana_nuts",
-        "name": "Roasted Spiced Foxnuts (Makhana) & Roasted Cashews",
+        "id": "keto_avocado_walnut_snack",
+        "name": "Hass Avocado Wedges with Sea Salt & Roasted Walnuts",
         "meal_type": "snack",
-        "diet_types": ["vegetarian", "vegan", "gluten_free"],
+        "diet_types": ["keto", "low_carb", "vegan", "vegetarian", "gluten_free"],
         "allergens": ["tree_nuts"],
-        "calories": 210,
-        "protein": 8.0,
-        "carbs": 24.0,
-        "fats": 10.0,
+        "calories": 220.0,
+        "protein": 4.5,
+        "carbs": 4.0,
+        "fats": 21.0,
         "prep_time_minutes": 2,
-        "cook_time_minutes": 5,
-        "description": "Crisp roasted lotus seeds (foxnuts/makhana) and whole cashews dry-roasted with pink Himalayan salt, turmeric, and black pepper.",
+        "cook_time_minutes": 0,
+        "description": "Fresh creamy avocado wedges seasoned with flaky sea salt, crushed red pepper, and paired with roasted walnut halves.",
         "ingredients": [
-            {"name": "Organic Foxnuts (Makhana)", "quantity": 35, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Raw Whole Cashews", "quantity": 20, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Pink Salt, Turmeric & Pepper", "quantity": 2, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Hass Avocado", "quantity": 80, "unit": "g", "aisle": "Vegetables", "calories": 130.0, "protein": 1.5, "carbs": 2.0, "fats": 12.0},
+            {"name": "Raw Walnuts", "quantity": 15, "unit": "g", "aisle": "Other Items", "calories": 90.0, "protein": 3.0, "carbs": 2.0, "fats": 9.0}
         ],
         "instructions": [
-            "Dry roast makhana and cashews in a pan on low-medium heat for 4-5 minutes until super crispy.",
-            "Toss with a drop of olive oil or ghee and season with pink salt and spices.",
-            "Serve warm or store in an airtight jar."
+            "Slice avocado into crescents, sprinkle flaky Maldon sea salt and serve with raw walnuts."
         ]
     },
 
-    # --- SNACKS & RECOVERY ---
+    # =========================================================================
+    # SNACKS & RECOVERY (VEGETARIAN / VEGAN SAFE)
+    # =========================================================================
     {
         "id": "snack_greek_yogurt_berry",
         "name": "High-Protein Greek Yogurt Parfait with Walnuts",
         "meal_type": "snack",
-        "diet_types": ["balanced", "mediterranean", "vegetarian", "gluten_free"],
+        "diet_types": ["balanced", "vegetarian", "high_protein", "gluten_free"],
         "allergens": ["dairy", "tree_nuts"],
-        "calories": 250,
+        "calories": 260.0,
         "protein": 22.0,
-        "carbs": 18.0,
-        "fats": 9.0,
+        "carbs": 21.0,
+        "fats": 9.7,
         "prep_time_minutes": 5,
         "cook_time_minutes": 0,
-        "description": "Authentic strained 0% Greek yogurt layered with antioxidant-rich raspberries, raw walnut halves, and raw wildflower honey.",
+        "description": "Authentic strained 0% Greek yogurt layered with raspberries, raw walnut halves, and raw honey.",
         "ingredients": [
-            {"name": "0% Strained Greek Yogurt", "quantity": 170, "unit": "g", "aisle": "Dairy & Refrigerated"},
-            {"name": "Fresh Raspberries", "quantity": 50, "unit": "g", "aisle": "Produce"},
-            {"name": "Raw Walnuts", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Raw Wildflower Honey", "quantity": 10, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "0% Strained Greek Yogurt", "quantity": 170, "unit": "g", "aisle": "Dairy & Plant Milks", "calories": 110.0, "protein": 19.0, "carbs": 6.0, "fats": 0.5},
+            {"name": "Fresh Raspberries & Honey", "quantity": 60, "unit": "g", "aisle": "Fruits", "calories": 55.0, "protein": 0.5, "carbs": 13.0, "fats": 0.2},
+            {"name": "Raw Walnuts", "quantity": 15, "unit": "g", "aisle": "Other Items", "calories": 95.0, "protein": 2.5, "carbs": 2.0, "fats": 9.0}
         ],
         "instructions": [
-            "Spoon cold Greek yogurt into a glass or bowl.",
-            "Top with fresh raspberries and crushed raw walnuts.",
-            "Drizzle with raw honey and enjoy immediately."
+            "Spoon chilled Greek yogurt into a bowl, top with fresh raspberries, crushed walnuts, and honey."
         ]
     },
     {
         "id": "snack_apple_almond_butter",
         "name": "Crisp Honeycrisp Apple Slices with Almond Butter",
         "meal_type": "snack",
-        "diet_types": ["vegan", "vegetarian", "paleo", "gluten_free"],
+        "diet_types": ["vegan", "vegetarian", "gluten_free"],
         "allergens": ["tree_nuts"],
-        "calories": 220,
-        "protein": 5.0,
+        "calories": 225.0,
+        "protein": 5.5,
         "carbs": 26.0,
-        "fats": 12.0,
-        "prep_time_minutes": 5,
+        "fats": 12.8,
+        "prep_time_minutes": 3,
         "cook_time_minutes": 0,
-        "description": "Crisp sweet Honeycrisp apple wedges paired with all-natural creamy almond butter and a pinch of Ceylon cinnamon.",
+        "description": "Crisp sweet Honeycrisp apple wedges paired with all-natural creamy almond butter and cinnamon.",
         "ingredients": [
-            {"name": "Honeycrisp Apple", "quantity": 1, "unit": "whole", "aisle": "Produce"},
-            {"name": "Natural Creamy Almond Butter", "quantity": 25, "unit": "g", "aisle": "Pantry & Spices"},
-            {"name": "Ground Ceylon Cinnamon", "quantity": 1, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Honeycrisp Apple", "quantity": 1, "unit": "whole", "aisle": "Fruits", "calories": 80.0, "protein": 0.5, "carbs": 20.0, "fats": 0.3},
+            {"name": "Natural Creamy Almond Butter", "quantity": 25, "unit": "g", "aisle": "Other Items", "calories": 145.0, "protein": 5.0, "carbs": 6.0, "fats": 12.5}
         ],
         "instructions": [
-            "Core and slice apple into wedges.",
-            "Serve with almond butter dusted with Ceylon cinnamon for dipping."
+            "Core and slice apple into wedges; serve with almond butter for dipping."
         ]
     },
     {
         "id": "snack_edamame_sea_salt",
         "name": "Steamed Sea Salt Edamame Pods",
         "meal_type": "snack",
-        "diet_types": ["vegan", "vegetarian", "balanced", "gluten_free"],
+        "diet_types": ["vegan", "vegetarian", "balanced", "gluten_free", "high_protein"],
         "allergens": ["soy"],
-        "calories": 180,
+        "calories": 180.0,
         "protein": 17.0,
         "carbs": 12.0,
         "fats": 7.0,
         "prep_time_minutes": 2,
         "cook_time_minutes": 5,
-        "description": "Young green soybeans in pod, steamed until tender and sprinkled with flaky Maldon sea salt.",
+        "description": "Young green soybeans in pod, steamed tender and tossed with sea salt.",
         "ingredients": [
-            {"name": "Whole Edamame in Pod", "quantity": 150, "unit": "g", "aisle": "Produce"},
-            {"name": "Flaky Sea Salt", "quantity": 3, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Whole Edamame in Pod", "quantity": 150, "unit": "g", "aisle": "Vegetables", "calories": 180.0, "protein": 17.0, "carbs": 12.0, "fats": 7.0}
         ],
         "instructions": [
-            "Steam or boil edamame pods for 4-5 minutes.",
-            "Drain well, toss with flaky sea salt, and serve warm."
+            "Steam edamame pods for 4-5 minutes, drain, toss with sea salt, and serve warm."
+        ]
+    },
+
+    # =========================================================================
+    # BALANCED / OMNIVORE / MEDITERRANEAN (FOR NON-VEGETARIAN FRAMEWORKS)
+    # =========================================================================
+    {
+        "id": "med_lemon_herb_salmon",
+        "name": "Pan-Seared Lemon Herb Salmon with Quinoa & Asparagus",
+        "meal_type": "dinner",
+        "diet_types": ["balanced", "high_protein", "gluten_free"],
+        "allergens": ["fish"],
+        "calories": 564.0,
+        "protein": 43.5,
+        "carbs": 31.0,
+        "fats": 25.5,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 20,
+        "description": "Wild Alaskan salmon filet seared with olive oil and dill, served atop quinoa and roasted asparagus.",
+        "ingredients": [
+            {"name": "Salmon Filet", "quantity": 180, "unit": "g", "aisle": "Other Items", "calories": 374.0, "protein": 36.0, "carbs": 0.0, "fats": 22.0},
+            {"name": "Tri-Color Quinoa", "quantity": 60, "unit": "g", "aisle": "Grains & Bakery", "calories": 140.0, "protein": 5.0, "carbs": 26.0, "fats": 2.0},
+            {"name": "Asparagus & Lemon Herb Glaze", "quantity": 120, "unit": "g", "aisle": "Vegetables", "calories": 50.0, "protein": 2.5, "carbs": 5.0, "fats": 1.5}
+        ],
+        "instructions": [
+            "Rinse quinoa and simmer for 15 minutes. Season salmon with salt, pepper, and dill.",
+            "Sear salmon in a hot skillet for 4 minutes per side; toss asparagus for 3 minutes."
         ]
     },
     {
-        "id": "snack_hard_boiled_eggs_almonds",
-        "name": "Omega-3 Boiled Eggs & Smoked Almonds",
-        "meal_type": "snack",
-        "diet_types": ["keto", "low_carb", "paleo", "gluten_free"],
-        "allergens": ["eggs", "tree_nuts"],
-        "calories": 240,
-        "protein": 16.0,
-        "carbs": 3.0,
-        "fats": 18.0,
-        "prep_time_minutes": 5,
-        "cook_time_minutes": 0,
-        "description": "Two seasoned omega-3 pasture-raised hard-boiled eggs paired with roasted smoked almonds.",
+        "id": "med_greek_chicken_bowl",
+        "name": "Mediterranean Herb Chicken & Farro Bowl",
+        "meal_type": "lunch",
+        "diet_types": ["balanced", "high_protein"],
+        "allergens": ["dairy", "gluten"],
+        "calories": 520.0,
+        "protein": 51.0,
+        "carbs": 39.0,
+        "fats": 13.0,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 15,
+        "description": "Grilled marinated chicken breast sliced over nutty farro, Persian cucumbers, cherry tomatoes, and feta.",
         "ingredients": [
-            {"name": "Hard Boiled Pasture-Raised Eggs", "quantity": 2, "unit": "whole", "aisle": "Dairy & Refrigerated"},
-            {"name": "Roasted Smoked Almonds", "quantity": 15, "unit": "g", "aisle": "Pantry & Spices"}
+            {"name": "Chicken Breast", "quantity": 170, "unit": "g", "aisle": "Other Items", "calories": 280.0, "protein": 42.0, "carbs": 0.0, "fats": 6.0},
+            {"name": "Cooked Farro", "quantity": 120, "unit": "g", "aisle": "Grains & Bakery", "calories": 160.0, "protein": 5.0, "carbs": 33.0, "fats": 1.0},
+            {"name": "Cucumbers, Tomatoes & Feta", "quantity": 100, "unit": "g", "aisle": "Vegetables", "calories": 80.0, "protein": 4.0, "carbs": 6.0, "fats": 6.0}
         ],
         "instructions": [
-            "Peel eggs, slice in half and dust with sea salt and cracked pepper.",
-            "Serve alongside roasted almonds."
+            "Grill chicken breast for 6-7 minutes per side. Layer warm farro and diced cucumbers in bowl, topping with sliced chicken."
+        ]
+    },
+    {
+        "id": "athletic_turkey_sweet_potato",
+        "name": "Lean Ground Turkey Hash with Roasted Sweet Potato",
+        "meal_type": "lunch",
+        "diet_types": ["balanced", "high_protein", "gluten_free"],
+        "allergens": [],
+        "calories": 510.0,
+        "protein": 48.0,
+        "carbs": 48.0,
+        "fats": 12.7,
+        "prep_time_minutes": 15,
+        "cook_time_minutes": 20,
+        "description": "93% lean ground turkey browned with bell peppers and caramelized onions, folded into roasted diced sweet potatoes.",
+        "ingredients": [
+            {"name": "93% Lean Ground Turkey", "quantity": 180, "unit": "g", "aisle": "Other Items", "calories": 290.0, "protein": 44.0, "carbs": 0.0, "fats": 12.0},
+            {"name": "Roasted Diced Sweet Potato", "quantity": 160, "unit": "g", "aisle": "Vegetables", "calories": 160.0, "protein": 2.5, "carbs": 36.0, "fats": 0.2},
+            {"name": "Bell Peppers & Green Beans", "quantity": 100, "unit": "g", "aisle": "Vegetables", "calories": 60.0, "protein": 2.0, "carbs": 12.0, "fats": 0.5}
+        ],
+        "instructions": [
+            "Brown turkey with paprika and sea salt. Roast sweet potatoes until caramelized and toss together with peppers."
         ]
     }
 ]
+
+# Guarantee exact mathematical identity: recipe nutrition == sum of ingredient nutrition
+for _recipe in RECIPE_DATABASE:
+    _recipe["calories"] = round(sum(i.get("calories", 0.0) for i in _recipe.get("ingredients", [])), 1)
+    _recipe["protein"] = round(sum(i.get("protein", 0.0) for i in _recipe.get("ingredients", [])), 1)
+    _recipe["carbs"] = round(sum(i.get("carbs", 0.0) for i in _recipe.get("ingredients", [])), 1)
+    _recipe["fats"] = round(sum(i.get("fats", 0.0) for i in _recipe.get("ingredients", [])), 1)
 
 def search_recipes(
     diet_type: str = "balanced",
@@ -637,64 +781,92 @@ def search_recipes(
 ) -> List[Dict[str, Any]]:
     """
     Search and filter recipes matching dietary protocol and allergen exclusion boundaries.
+    Enforces strict ingredient-level checking for vegetarians (no eggs, no meat, no seafood).
     """
     exclude_set = {a.strip().lower() for a in (exclude_allergens or []) if a.strip()}
     dt = diet_type.lower()
 
-    # Strict dietary framework boundaries
-    if dt == "vegetarian":
-        # Pure vegetarian (lacto-vegetarian): strictly NO eggs, NO meat, NO fish, NO poultry, NO seafood
-        exclude_set.update({"eggs", "egg", "fish", "meat", "shellfish", "poultry", "pork", "beef"})
-    elif dt == "eggetarian":
-        # Vegetarian with eggs: strictly NO meat, NO fish, NO poultry, NO seafood
-        exclude_set.update({"fish", "meat", "shellfish", "poultry", "pork", "beef"})
-    elif dt == "vegan":
-        # 100% plant-based: strictly NO dairy, NO eggs, NO meat, NO fish, NO poultry, NO seafood
-        exclude_set.update({"dairy", "eggs", "egg", "fish", "meat", "shellfish", "poultry", "pork", "beef"})
-    
+    # Map dietary frameworks to strict exclusion boundaries
+    if dt in FRAMEWORK_FORBIDDEN_KEYWORDS:
+        forbidden_words = FRAMEWORK_FORBIDDEN_KEYWORDS[dt]
+    else:
+        forbidden_words = []
+
+    # Map exclude_allergens to ingredient keywords
+    allergen_forbidden_keywords = {}
+    for allergen in exclude_set:
+        mapped = ALLERGEN_INGREDIENT_MAP.get(allergen, [allergen])
+        allergen_forbidden_keywords[allergen] = mapped
+
     results = []
     for r in RECIPE_DATABASE:
-        # Filter by meal_type if requested
+        # 1. Filter by meal_type if requested
         if meal_type and r.get("meal_type") != meal_type:
             continue
             
-        # Check allergen exclusion
+        # 2. Check recipe top-level allergen tags
         recipe_allergens = {a.lower() for a in r.get("allergens", [])}
         if exclude_set.intersection(recipe_allergens):
             continue
 
-        # If vegetarian, ensure no ingredient contains eggs or meat
+        # 3. Check ingredient-level names against allergen exclusions (with plant milk exemption)
+        has_allergen_conflict = False
+        ingredients = r.get("ingredients", [])
+        for ing in ingredients:
+            ing_name = ing.get("name", "").lower()
+            for allergen, keywords in allergen_forbidden_keywords.items():
+                for kw in keywords:
+                    if kw in ing_name:
+                        # Plant milk exemption for dairy
+                        if allergen == "dairy" and kw == "milk":
+                            if any(pm in ing_name for pm in PLANT_MILK_KEYWORDS):
+                                continue
+                        has_allergen_conflict = True
+                        break
+                if has_allergen_conflict:
+                    break
+            if has_allergen_conflict:
+                break
+        if has_allergen_conflict:
+            continue
+
+        # 4. Check dietary framework restrictions (strict vegetarian / vegan)
+        if forbidden_words:
+            has_forbidden_ingredient = False
+            for ing in ingredients:
+                ing_name = ing.get("name", "").lower()
+                for forbidden in forbidden_words:
+                    if forbidden in ing_name:
+                        if dt == "vegan" and forbidden == "milk":
+                            if any(pm in ing_name for pm in PLANT_MILK_KEYWORDS):
+                                continue
+                        has_forbidden_ingredient = True
+                        break
+                if has_forbidden_ingredient:
+                    break
+            if has_forbidden_ingredient:
+                continue
+
+        # 5. Check diet type tag compatibility
+        r_diets = r.get("diet_types", [])
         if dt == "vegetarian":
-            has_egg_or_meat = any(
-                any(forbidden in ing.get("name", "").lower() for forbidden in ["egg", "chicken", "beef", "turkey", "pork", "fish", "salmon", "bacon"])
-                for ing in r.get("ingredients", [])
-            )
-            if has_egg_or_meat:
+            if "vegetarian" not in r_diets:
                 continue
         elif dt == "vegan":
-            has_animal_product = any(
-                any(forbidden in ing.get("name", "").lower() for forbidden in ["egg", "dairy", "milk", "cheese", "yogurt", "ghee", "butter", "paneer", "chicken", "beef", "turkey", "pork", "fish", "salmon", "bacon"])
-                for ing in r.get("ingredients", [])
-            )
-            if has_animal_product:
+            if "vegan" not in r_diets:
                 continue
-        elif dt == "eggetarian":
-            has_meat = any(
-                any(forbidden in ing.get("name", "").lower() for forbidden in ["chicken", "beef", "turkey", "pork", "fish", "salmon", "bacon"])
-                for ing in r.get("ingredients", [])
-            )
-            if has_meat:
+        elif dt == "high_protein":
+            if "high_protein" not in r_diets and "balanced" not in r_diets:
                 continue
-            
-        # Check diet type compatibility
-        # If diet is 'balanced', it matches broadly; if specific (keto/vegan/vegetarian), matches tags
-        if dt == "eggetarian":
-            if not ("eggetarian" in r.get("diet_types", []) or "vegetarian" in r.get("diet_types", [])):
+        elif dt == "low_carb":
+            if "low_carb" not in r_diets and "keto" not in r_diets:
                 continue
-        elif dt != "balanced" and dt not in r.get("diet_types", []):
+        elif dt == "keto":
+            if "keto" not in r_diets and "low_carb" not in r_diets:
+                continue
+        elif dt != "balanced" and dt not in r_diets:
             continue
             
         results.append(r)
 
-        
     return results

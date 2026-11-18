@@ -39,6 +39,10 @@ export interface IngredientItem {
   quantity: number;
   unit: string;
   aisle: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
 }
 
 export interface MealItem {
@@ -55,6 +59,8 @@ export interface MealItem {
   ingredients: IngredientItem[];
   instructions: string[];
   allergens: string[];
+  dietary_category?: string;
+  image_url?: string;
 }
 
 export interface DayMealPlan {

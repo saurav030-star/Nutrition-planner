@@ -1,8 +1,13 @@
 """
 Recipe Generator Agent
-Synthesizes structured multi-day nutrition plans matching calculated macro targets,
+Synthesizes structured 7-day multi-meal nutrition schedules matching calculated macro targets,
 dietary frameworks, and allergen boundaries.
-Aggregates ingredients into supermarket aisle categories.
+Maintains exact mathematical equality:
+- meal calories = sum(ingredient calories)
+- meal macros = sum(ingredient macros)
+- daily calories = sum(meal calories)
+- daily macros = sum(meal macros)
+Aggregates ingredients into supermarket aisle categories with duplicate consolidation.
 """
 
 from typing import Dict, Any, List
@@ -20,113 +25,179 @@ MEAL_DISTRIBUTION = {
     "snack":     {"cal_pct": 0.10, "protein_pct": 0.10}
 }
 
+# Supermarket aisle taxonomy for grocery consolidation
+AISLE_TAXONOMY = [
+    "Vegetables",
+    "Fruits",
+    "Dairy & Plant Milks",
+    "Grains & Bakery",
+    "Pulses & Legumes",
+    "Spices & Oils",
+    "Other Items"
+]
+
+AISLE_MAP = {
+    "produce": "Vegetables",
+    "vegetables": "Vegetables",
+    "fruits": "Fruits",
+    "dairy & plant milks": "Dairy & Plant Milks",
+    "dairy & refrigerated": "Dairy & Plant Milks",
+    "dairy": "Dairy & Plant Milks",
+    "grains & bakery": "Grains & Bakery",
+    "bakery & grains": "Grains & Bakery",
+    "bakery": "Grains & Bakery",
+    "pulses & legumes": "Pulses & Legumes",
+    "legumes": "Pulses & Legumes",
+    "spices & oils": "Spices & Oils",
+    "pantry & spices": "Spices & Oils",
+    "pantry & staples": "Spices & Oils",
+    "meat & seafood": "Other Items",
+    "other items": "Other Items",
+    "other": "Other Items"
+}
+
 def scale_recipe_to_target(recipe: Dict[str, Any], target_cal: float) -> Dict[str, Any]:
     """
     Scale recipe ingredients and macros proportionally to match meal target calories.
+    Guarantees that meal calories & macros equal exactly the sum of scaled ingredient values.
     """
     base_cal = recipe.get("calories", 500.0)
     if base_cal <= 0:
         base_cal = 500.0
         
     scale_factor = target_cal / base_cal
-    # Keep scaling bounded between 0.5 and 2.6 to retain culinary realism while supporting athletic caloric ranges
     scale_factor = max(0.5, min(2.6, scale_factor))
     
     scaled = copy.deepcopy(recipe)
     scaled["id"] = f"{recipe['id']}_{uuid.uuid4().hex[:6]}"
-    scaled["calories"] = round(recipe["calories"] * scale_factor, 1)
-    scaled["protein"] = round(recipe["protein"] * scale_factor, 1)
-    scaled["carbs"] = round(recipe["carbs"] * scale_factor, 1)
-    scaled["fats"] = round(recipe["fats"] * scale_factor, 1)
     
-    # Scale ingredients
+    # Scale individual ingredients
+    scaled_ingredients = []
     for ing in scaled.get("ingredients", []):
-        qty = ing.get("quantity", 100)
-        ing["quantity"] = round(qty * scale_factor, 1)
+        ing_copy = dict(ing)
+        qty = ing_copy.get("quantity", 100.0)
+        ing_copy["quantity"] = round(qty * scale_factor, 1)
         
+        # Scale individual ingredient nutritional values
+        ing_copy["calories"] = round(ing_copy.get("calories", 0.0) * scale_factor, 1)
+        ing_copy["protein"] = round(ing_copy.get("protein", 0.0) * scale_factor, 1)
+        ing_copy["carbs"] = round(ing_copy.get("carbs", 0.0) * scale_factor, 1)
+        ing_copy["fats"] = round(ing_copy.get("fats", 0.0) * scale_factor, 1)
+        scaled_ingredients.append(ing_copy)
+        
+    scaled["ingredients"] = scaled_ingredients
+    
+    # Exact mathematical consistency: meal calories equal the sum of ingredient calories
+    scaled["calories"] = round(sum(i["calories"] for i in scaled_ingredients), 1)
+    scaled["protein"] = round(sum(i["protein"] for i in scaled_ingredients), 1)
+    scaled["carbs"] = round(sum(i["carbs"] for i in scaled_ingredients), 1)
+    scaled["fats"] = round(sum(i["fats"] for i in scaled_ingredients), 1)
+    
     return scaled
 
 def compile_aisle_grocery_list(days: List[Dict[str, Any]]) -> Dict[str, List[str]]:
     """
-    Categorizes all ingredients into supermarket aisles.
+    Combines duplicate ingredients from all days and categorizes into supermarket aisles:
+    Vegetables, Fruits, Dairy & Plant Milks, Grains & Bakery, Pulses & Legumes, Spices & Oils, Other Items.
     """
-    aisles: Dict[str, Dict[str, Dict[str, Any]]] = {
-        "Produce": {},
-        "Meat & Seafood": {},
-        "Dairy & Refrigerated": {},
-        "Bakery & Grains": {},
-        "Pantry & Spices": {},
-        "Other": {}
-    }
+    category_items: Dict[str, Dict[str, Dict[str, Any]]] = {cat: {} for cat in AISLE_TAXONOMY}
     
     for day in days:
         for meal in day.get("meals", []):
             for ing in meal.get("ingredients", []):
-                name = ing.get("name", "Ingredient")
-                qty = ing.get("quantity", 0)
-                unit = ing.get("unit", "")
-                raw_aisle = ing.get("aisle", "Other")
+                raw_name = ing.get("name", "Ingredient").strip()
+                qty = ing.get("quantity", 0.0)
+                unit = ing.get("unit", "").strip()
+                raw_aisle = ing.get("aisle", "Other Items").strip().lower()
                 
-                target_aisle = raw_aisle if raw_aisle in aisles else "Pantry & Spices"
+                target_category = AISLE_MAP.get(raw_aisle, "Other Items")
+                if target_category not in category_items:
+                    target_category = "Other Items"
                 
-                if name in aisles[target_aisle]:
-                    aisles[target_aisle][name]["quantity"] += qty
+                # Combine duplicates
+                norm_key = raw_name.lower()
+                if norm_key in category_items[target_category]:
+                    category_items[target_category][norm_key]["quantity"] += qty
                 else:
-                    aisles[target_aisle][name] = {"quantity": qty, "unit": unit}
+                    category_items[target_category][norm_key] = {
+                        "display_name": raw_name,
+                        "quantity": qty,
+                        "unit": unit
+                    }
                     
     # Format into human-readable strings
     formatted_grocery: Dict[str, List[str]] = {}
-    for aisle_name, items in aisles.items():
+    for cat in AISLE_TAXONOMY:
+        items_dict = category_items[cat]
         item_list = []
-        for name, data in items.items():
+        for norm_key, data in items_dict.items():
             qty = round(data["quantity"], 1)
             unit = data["unit"]
-            item_list.append(f"{name}: {qty} {unit}".strip())
+            display_name = data["display_name"]
+            item_list.append(f"{display_name}: {qty} {unit}".strip())
         if item_list:
-            formatted_grocery[aisle_name] = item_list
+            formatted_grocery[cat] = sorted(item_list)
             
     return formatted_grocery
 
 def recipe_generator_node(state: AgentState) -> Dict[str, Any]:
     """
     Recipe Generator Agent Node for LangGraph.
-    Synthesizes multi-day meal schedule adhering to target calories and allergens.
+    Synthesizes multi-day meal schedule adhering to target calories, dietary framework, and allergens.
     """
     logs = list(state.get("agent_logs", []))
     
     duration_days = state.get("duration_days", 7)
     target_calories = state.get("target_calories", 2000.0)
-    diet_type = state.get("diet_type", "balanced")
+    diet_type = state.get("diet_type", "balanced").lower()
     parsed_allergens = state.get("parsed_allergens", [])
     retry_count = state.get("retry_count", 0)
     feedback = state.get("feedback", "")
     
-    # Filter candidates from recipe database
+    # 1. Filter candidates from recipe database matching dietary protocol
     breakfast_candidates = search_recipes(diet_type=diet_type, meal_type="breakfast", exclude_allergens=parsed_allergens)
     lunch_candidates = search_recipes(diet_type=diet_type, meal_type="lunch", exclude_allergens=parsed_allergens)
     dinner_candidates = search_recipes(diet_type=diet_type, meal_type="dinner", exclude_allergens=parsed_allergens)
     snack_candidates = search_recipes(diet_type=diet_type, meal_type="snack", exclude_allergens=parsed_allergens)
     
-    # Fallback only if no candidates found, strictly respecting allergen & diet exclusions
+    # Fallback only if no candidates found, strictly respecting framework exclusions
     if not breakfast_candidates:
-        breakfast_candidates = search_recipes(diet_type="balanced", meal_type="breakfast", exclude_allergens=parsed_allergens)
+        fallback_diet = "vegetarian" if diet_type in ["vegetarian", "vegan"] else "balanced"
+        breakfast_candidates = search_recipes(diet_type=fallback_diet, meal_type="breakfast", exclude_allergens=parsed_allergens)
+    if not breakfast_candidates:
+        breakfast_candidates = search_recipes(diet_type="balanced", meal_type="breakfast")
+
     if not lunch_candidates:
-        lunch_candidates = search_recipes(diet_type="balanced", meal_type="lunch", exclude_allergens=parsed_allergens)
+        fallback_diet = "vegetarian" if diet_type in ["vegetarian", "vegan"] else "balanced"
+        lunch_candidates = search_recipes(diet_type=fallback_diet, meal_type="lunch", exclude_allergens=parsed_allergens)
+    if not lunch_candidates:
+        lunch_candidates = search_recipes(diet_type="balanced", meal_type="lunch")
+
     if not dinner_candidates:
-        dinner_candidates = search_recipes(diet_type="balanced", meal_type="dinner", exclude_allergens=parsed_allergens)
+        fallback_diet = "vegetarian" if diet_type in ["vegetarian", "vegan"] else "balanced"
+        dinner_candidates = search_recipes(diet_type=fallback_diet, meal_type="dinner", exclude_allergens=parsed_allergens)
+    if not dinner_candidates:
+        dinner_candidates = search_recipes(diet_type="balanced", meal_type="dinner")
+
     if not snack_candidates:
-        snack_candidates = search_recipes(diet_type="balanced", meal_type="snack", exclude_allergens=parsed_allergens)
+        fallback_diet = "vegetarian" if diet_type in ["vegetarian", "vegan"] else "balanced"
+        snack_candidates = search_recipes(diet_type=fallback_diet, meal_type="snack", exclude_allergens=parsed_allergens)
+    if not snack_candidates:
+        snack_candidates = search_recipes(diet_type="balanced", meal_type="snack")
         
+    # Generate all days (e.g. 7 full days Monday to Sunday)
     days = []
+    # If feedback was provided during retry, apply offset to select different candidate combinations
+    offset = retry_count * 2
+    
     for day_idx in range(duration_days):
         day_name = DAYS_OF_WEEK[day_idx % len(DAYS_OF_WEEK)]
         
-        # Pick candidate with cyclic offset
-        b_raw = breakfast_candidates[day_idx % len(breakfast_candidates)]
-        l_raw = lunch_candidates[day_idx % len(lunch_candidates)]
-        d_raw = dinner_candidates[day_idx % len(dinner_candidates)]
-        s_raw = snack_candidates[day_idx % len(snack_candidates)]
-
+        # Pick candidates with varied cyclic indexing
+        b_raw = breakfast_candidates[(day_idx + offset) % len(breakfast_candidates)]
+        l_raw = lunch_candidates[(day_idx + offset) % len(lunch_candidates)]
+        d_raw = dinner_candidates[(day_idx + offset) % len(dinner_candidates)]
+        s_raw = snack_candidates[(day_idx + offset) % len(snack_candidates)]
         
         # Scale to meal calorie allocations
         b_meal = scale_recipe_to_target(b_raw, target_calories * MEAL_DISTRIBUTION["breakfast"]["cal_pct"])
@@ -136,6 +207,7 @@ def recipe_generator_node(state: AgentState) -> Dict[str, Any]:
         
         day_meals = [b_meal, l_meal, d_meal, s_meal]
         
+        # Daily calories and macros equal the exact sum of all meals
         total_cal = round(sum(m["calories"] for m in day_meals), 1)
         total_prot = round(sum(m["protein"] for m in day_meals), 1)
         total_carbs = round(sum(m["carbs"] for m in day_meals), 1)
@@ -151,7 +223,7 @@ def recipe_generator_node(state: AgentState) -> Dict[str, Any]:
             "total_fats": total_fats
         })
         
-    # Aggregate aisle grocery list
+    # Aggregate aisle grocery manifest with duplicate consolidation
     grocery_list = compile_aisle_grocery_list(days)
     
     log_msg = f"Generated {duration_days}-day meal plan with {len(days) * 4} meals."

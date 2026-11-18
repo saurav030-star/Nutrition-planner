@@ -73,6 +73,15 @@ def generate_plan(
     # Execute LangGraph Multi-Agent Pipeline
     agent_output = run_nutrition_pipeline(initial_state)
     
+    # Requirement 5: If verification fails after 3 retries, return meaningful error instead of displaying an invalid plan
+    if not agent_output.get("is_valid", True):
+        remarks = agent_output.get("remarks", "Constraint verifier rejected the plan.")
+        allergen_v = agent_output.get("allergen_violations", [])
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"LangGraph verification rejected plan after 3 retries: {remarks}"
+        )
+    
     # Deactivate previous active plans
     db.query(MealPlan).filter(
         MealPlan.user_id == current_user.id,
@@ -191,6 +200,20 @@ def export_meal_plan_pdf(
     user = plan.user
     user_name = (user.full_name or user.email) if user else "Nutrition Pro"
     
+    # Retrieve user dietary profile for complete medical/biometric report
+    profile = db.query(DietaryProfile).filter(DietaryProfile.user_id == plan.user_id).first()
+    profile_dict = {
+        "age": profile.age if profile else 25,
+        "gender": profile.gender if profile else "Male",
+        "weight": profile.weight if profile else 70,
+        "height": profile.height if profile else 175,
+        "activity_level": profile.activity_level if profile else "moderately_active",
+        "health_goal": profile.health_goal if profile else "weight_loss",
+        "diet_type": profile.diet_type if profile else "vegetarian",
+        "bmr": profile.bmr if profile else None,
+        "tdee": profile.tdee if profile else None
+    }
+    
     plan_data = plan.get_plan()
     verification_data = plan.get_verification()
     grocery_data = plan.get_grocery()
@@ -204,7 +227,8 @@ def export_meal_plan_pdf(
         target_fats=plan.target_fats,
         days=plan_data.get("days", []),
         grocery_list=grocery_data,
-        verification=verification_data
+        verification=verification_data,
+        profile_data=profile_dict
     )
     
     return Response(

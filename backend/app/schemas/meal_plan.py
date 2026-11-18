@@ -8,6 +8,10 @@ class IngredientItem(BaseModel):
     quantity: float
     unit: str
     aisle: str = "Pantry & Staples"
+    calories: Optional[float] = 0.0
+    protein: Optional[float] = 0.0
+    carbs: Optional[float] = 0.0
+    fats: Optional[float] = 0.0
 
 class MealItem(BaseModel):
     id: str
@@ -23,6 +27,8 @@ class MealItem(BaseModel):
     ingredients: List[IngredientItem]
     instructions: List[str]
     allergens: List[str] = []
+    dietary_category: Optional[str] = None
+    image_url: Optional[str] = None
 
 class DayMealPlan(BaseModel):
     day_number: int
