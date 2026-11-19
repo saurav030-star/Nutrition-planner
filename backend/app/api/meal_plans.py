@@ -189,9 +189,10 @@ def export_meal_plan_pdf(
                 pass
 
     # 3. Fetch plan
+    plan = None
     if user_id:
         plan = db.query(MealPlan).filter(MealPlan.id == plan_id, MealPlan.user_id == user_id).first()
-    else:
+    if not plan:
         plan = db.query(MealPlan).filter(MealPlan.id == plan_id).first()
         
     if not plan:
