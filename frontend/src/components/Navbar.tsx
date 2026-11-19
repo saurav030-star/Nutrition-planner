@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { getAuthToken, removeAuthToken, getStoredUser } from "@/lib/api";
 import { 
   Sparkles, 
+  Activity,
   LayoutDashboard, 
   ChefHat, 
   ShoppingCart, 
@@ -36,7 +37,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/planner", label: "AI Planner (LangGraph)", icon: ChefHat },
+    { href: "/planner", label: "AI Planner", icon: ChefHat },
     { href: "/grocery", label: "Grocery & PDF Export", icon: ShoppingCart },
     { href: "/benchmark", label: "TaskBench Benchmarks", icon: Gauge },
   ];
@@ -48,7 +49,7 @@ export default function Navbar() {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 font-bold text-lg text-slate-900 hover:opacity-90 transition">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-            <Sparkles className="w-5 h-5" />
+            <Activity className="w-5 h-5" />
           </div>
           <div>
             <span className="text-emerald-600 font-extrabold tracking-tight">Nutri</span>
