@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import AgentVisualizer from "@/components/AgentVisualizer";
 import MealCard from "@/components/MealCard";
 import { MealPlan, DayMealPlan } from "@/lib/types";
 import { 
@@ -18,8 +17,6 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   ChefHat
 } from "lucide-react";
 
@@ -50,10 +47,6 @@ export default function PlannerPage() {
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const [durationDays, setDurationDays] = useState(7);
   const [durationInput, setDurationInput] = useState("7");
-  const [showHowItWorks, setShowHowItWorks] = useState(false);
-
-  // Agent Visualizer simulation stage
-  const [agentStage, setAgentStage] = useState<any>("idle");
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [activeWeekTab, setActiveWeekTab] = useState(1);
 
@@ -135,28 +128,14 @@ export default function PlannerPage() {
         allergies: selectedAllergies.join(", "),
       });
 
-      // Stage visual transitions
-      setAgentStage("profile");
-      await new Promise((r) => setTimeout(r, 400));
-      setAgentStage("macros");
-      await new Promise((r) => setTimeout(r, 400));
-      setAgentStage("recipes");
-      await new Promise((r) => setTimeout(r, 500));
-      setAgentStage("verifier");
-      await new Promise((r) => setTimeout(r, 400));
-
       const res = await api.generateMealPlan(payload);
       return res;
     },
     onSuccess: (data) => {
-      setAgentStage("completed");
       queryClient.setQueryData(["activeMealPlan"], data);
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["nutritionLogs"] });
       setSelectedDayIndex(0);
-    },
-    onError: () => {
-      setAgentStage("idle");
     },
   });
 
@@ -206,34 +185,7 @@ export default function PlannerPage() {
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
           Create a personalized nutrition plan based on goals and food preferences
         </p>
-
-        {/* Subtle collapsible accordion trigger for technical details */}
-        <div className="mt-2.5">
-          <button
-            type="button"
-            onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="text-xs text-slate-500 hover:text-slate-800 transition inline-flex items-center gap-1.5 font-medium cursor-pointer select-none"
-          >
-            {showHowItWorks ? (
-              <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            )}
-            <span>How AI Generates Your Plan</span>
-          </button>
-        </div>
       </div>
-
-      {/* Multi-Agent DAG Visualizer Component (collapsed by default) */}
-      {showHowItWorks && (
-        <div className="pt-1">
-          <AgentVisualizer
-            currentStage={generateMutation.isPending ? agentStage : "completed"}
-            verificationScore={activePlan?.verification?.confidence_score || 100}
-            retryCount={activePlan?.verification?.retry_count || 0}
-          />
-        </div>
-      )}
 
       {/* Main Layout: Configuration Form & Meal Plan Results */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

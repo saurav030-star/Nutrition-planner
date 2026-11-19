@@ -9,7 +9,6 @@ import {
   LayoutDashboard, 
   ChefHat, 
   ShoppingCart, 
-  Gauge, 
   LogOut, 
   UserCircle 
 } from "lucide-react";
@@ -35,7 +34,6 @@ export default function Navbar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/planner", label: "AI Planner", icon: ChefHat },
     { href: "/grocery", label: "Grocery & PDF Export", icon: ShoppingCart },
-    { href: "/benchmark", label: "TaskBench Benchmarks", icon: Gauge },
   ];
 
   return (
