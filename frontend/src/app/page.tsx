@@ -10,9 +10,7 @@ import {
   ShoppingCart, 
   Calculator,
   User,
-  BarChart2,
-  Sprout,
-  Zap
+  BarChart2
 } from "lucide-react";
 
 export default function Home() {
@@ -193,31 +191,6 @@ export default function Home() {
               <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-snug">
                 Get grocery list and start your diet
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Powered by LangGraph Bottom Banner */}
-      <section className="pb-4">
-        <div className="bg-[#eefcf4] border border-emerald-100/90 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-white border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs shrink-0">
-              <Sprout className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900">Powered by LangGraph</h3>
-              <p className="text-[11px] sm:text-xs text-slate-600 mt-0.5">
-                A multi-agent AI system for smarter, safer and more reliable nutrition planning.
-              </p>
-            </div>
-          </div>
-
-          <div className="self-end md:self-auto">
-            <div className="bg-white px-3.5 py-1.5 rounded-full border border-emerald-100 shadow-xs flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-              <span>Built with</span>
-              <Zap className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
-              <span className="font-semibold text-slate-900">Next.js · FastAPI · PostgreSQL</span>
             </div>
           </div>
         </div>
