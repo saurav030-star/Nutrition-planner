@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getAuthToken } from "@/lib/api";
-import AgentVisualizer from "@/components/AgentVisualizer";
 import MealCard from "@/components/MealCard";
 import { MealPlan, DayMealPlan } from "@/lib/types";
 import { 
@@ -53,8 +52,6 @@ export default function PlannerPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  // Agent Visualizer simulation stage
-  const [agentStage, setAgentStage] = useState<any>("idle");
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [downloading, setDownloading] = useState(false);
 
@@ -122,28 +119,16 @@ export default function PlannerPage() {
         allergies: selectedAllergies.join(", "),
       });
 
-      // Stage visual transitions
-      setAgentStage("profile");
-      await new Promise((r) => setTimeout(r, 350));
-      setAgentStage("macros");
-      await new Promise((r) => setTimeout(r, 350));
-      setAgentStage("recipes");
-      await new Promise((r) => setTimeout(r, 400));
-      setAgentStage("verifier");
-      await new Promise((r) => setTimeout(r, 350));
-
       const res = await api.generateMealPlan(payload);
       return res;
     },
     onSuccess: (data) => {
-      setAgentStage("completed");
       queryClient.setQueryData(["activeMealPlan"], data);
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["nutritionLogs"] });
       setSelectedDayIndex(0);
     },
     onError: (err: any) => {
-      setAgentStage("idle");
       const detail = err?.response?.data?.detail;
       const msg = typeof detail === "string" ? detail : detail?.message || "LangGraph constraint verification could not find a compliant plan after 3 retries.";
       setGenerationError(msg);
@@ -218,13 +203,6 @@ export default function PlannerPage() {
           Profile Analyzer computes clinical BMR/TDEE &rarr; Macro Optimizer allocates exact grams &rarr; Recipe Generator synthesizes complete 7-day schedules &rarr; Constraint Verifier executes allergen & dietary protocol audits with self-correction retry loops.
         </p>
       </div>
-
-      {/* Multi-Agent DAG Visualizer Component */}
-      <AgentVisualizer
-        currentStage={generateMutation.isPending ? agentStage : "completed"}
-        verificationScore={activePlan?.verification?.confidence_score || 100}
-        retryCount={activePlan?.verification?.retry_count || 0}
-      />
 
       {/* Error Alert Banner if 422 LangGraph Constraint Verification Rejection */}
       {generationError && (
