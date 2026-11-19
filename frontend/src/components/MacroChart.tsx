@@ -79,24 +79,16 @@ export default function MacroChart({
       </div>
 
       {/* Legend & Gram stats */}
-      <div className="flex-1 space-y-3 w-full">
+      <div className="flex-1 space-y-3 w-full pl-2">
         {data.map((item) => {
           const pct = Math.round((item.value / totalCal) * 100);
           return (
-            <div key={item.name} className="space-y-1">
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="flex items-center gap-1.5 text-slate-700">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  {item.name}
-                </span>
-                <span className="text-slate-900">{item.grams}g ({pct}%)</span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, backgroundColor: item.color }}
-                />
-              </div>
+            <div key={item.name} className="flex items-center justify-between text-xs font-semibold">
+              <span className="flex items-center gap-2 text-slate-800">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                {item.name} {pct}%
+              </span>
+              <span className="text-slate-500 font-medium">(= {Math.round(item.grams)}g)</span>
             </div>
           );
         })}

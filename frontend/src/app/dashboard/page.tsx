@@ -12,15 +12,16 @@ import {
   Wheat, 
   Droplet, 
   CheckCircle2, 
-  Clock, 
-  ChefHat, 
+  Circle,
+  RotateCw, 
+  ShoppingCart, 
   ArrowUpRight, 
-  TrendingUp, 
   Calendar,
-  ShieldCheck,
-  ShoppingCart,
-  Sparkles,
-  Layers
+  Sun,
+  Utensils,
+  CookingPot,
+  Apple,
+  Sparkles
 } from "lucide-react";
 import { 
   BarChart, 
@@ -29,7 +30,9 @@ import {
   YAxis, 
   Tooltip, 
   ResponsiveContainer, 
-  CartesianGrid 
+  CartesianGrid,
+  ReferenceLine,
+  LabelList
 } from "recharts";
 
 export default function DashboardPage() {
@@ -46,7 +49,7 @@ export default function DashboardPage() {
   }, [router]);
 
   // Fetch active meal plan
-  const { data: activePlan, isLoading: planLoading } = useQuery({
+  const { data: activePlan } = useQuery({
     queryKey: ["activeMealPlan"],
     queryFn: () => api.getActiveMealPlan().catch(() => null),
   });
@@ -57,15 +60,35 @@ export default function DashboardPage() {
     queryFn: () => api.getProfile().catch(() => null),
   });
 
-  // Fetch 7-day nutrition logs
+  // Fetch 30-day nutrition logs to support range filtering
   const { data: logs = [] } = useQuery({
     queryKey: ["nutritionLogs"],
-    queryFn: () => api.getNutritionLogs(7),
+    queryFn: () => api.getNutritionLogs(30),
   });
 
-  const latestLog = logs[logs.length - 1] || null;
+  // Locked target values derived from active meal plan or profile
+  const targetCal = activePlan?.target_calories || profile?.target_calories || 2451;
+  const targetProt = activePlan?.target_protein || profile?.target_protein_g || 184;
+  const targetCarbs = activePlan?.target_carbs || profile?.target_carbs_g || 245;
+  const targetFats = activePlan?.target_fats || profile?.target_fats_g || 82;
+  const planDays = activePlan?.duration_days || 3;
 
-  // Toggle meal checklist mutation
+  // Identify today's log (or most recent log entry)
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayLog = logs.find((l: any) => l.log_date === todayStr) || logs[logs.length - 1] || null;
+
+  // Consumed values derived from today's log items (starts strictly at 0 if no meals completed!)
+  const consumedCal = todayLog ? Math.round(todayLog.consumed_calories) : 0;
+  const consumedProt = todayLog ? Math.round(todayLog.consumed_protein) : 0;
+  const consumedCarbs = todayLog ? Math.round(todayLog.consumed_carbs) : 0;
+  const consumedFats = todayLog ? Math.round(todayLog.consumed_fats) : 0;
+
+  const caloriePct = targetCal > 0 ? Math.min(100, Math.round((consumedCal / targetCal) * 100)) : 0;
+  const protPct = targetProt > 0 ? Math.min(100, Math.round((consumedProt / targetProt) * 100)) : 0;
+  const carbsPct = targetCarbs > 0 ? Math.min(100, Math.round((consumedCarbs / targetCarbs) * 100)) : 0;
+  const fatsPct = targetFats > 0 ? Math.min(100, Math.round((consumedFats / targetFats) * 100)) : 0;
+
+  // Meal consumption toggle mutation
   const logMutation = useMutation({
     mutationFn: (updatedLog: any) => api.logDailyIntake(updatedLog),
     onSuccess: () => {
@@ -74,57 +97,76 @@ export default function DashboardPage() {
   });
 
   const handleToggleMeal = (itemIndex: number) => {
-    if (!latestLog) return;
-    const items = [...latestLog.items];
-    const targetItem = { ...items[itemIndex], completed: !items[itemIndex].completed };
-    items[itemIndex] = targetItem;
+    if (!todayLog || !todayLog.items) return;
+    const items = todayLog.items.map((item: any, idx: number) => {
+      if (idx === itemIndex) {
+        return { ...item, completed: !item.completed };
+      }
+      return item;
+    });
 
-    // Recalculate consumed
-    const consumedCal = items.filter((i) => i.completed).reduce((acc, i) => acc + i.calories, 0);
-    const consumedProt = items.filter((i) => i.completed).reduce((acc, i) => acc + i.protein, 0);
-    const consumedCarbs = items.filter((i) => i.completed).reduce((acc, i) => acc + i.carbs, 0);
-    const consumedFats = items.filter((i) => i.completed).reduce((acc, i) => acc + i.fats, 0);
+    // Recalculate consumed exclusively from completed items
+    const newCal = items.filter((i: any) => i.completed).reduce((acc: number, i: any) => acc + (i.calories || 0), 0);
+    const newProt = items.filter((i: any) => i.completed).reduce((acc: number, i: any) => acc + (i.protein || 0), 0);
+    const newCarbs = items.filter((i: any) => i.completed).reduce((acc: number, i: any) => acc + (i.carbs || 0), 0);
+    const newFats = items.filter((i: any) => i.completed).reduce((acc: number, i: any) => acc + (i.fats || 0), 0);
+
+    // Optimistically update React Query cache for zero latency
+    queryClient.setQueryData(["nutritionLogs"], (oldLogs: any[] = []) => {
+      return oldLogs.map((l: any) => {
+        if (l.log_date === todayLog.log_date) {
+          return {
+            ...l,
+            consumed_calories: Math.round(newCal),
+            consumed_protein: Math.round(newProt),
+            consumed_carbs: Math.round(newCarbs),
+            consumed_fats: Math.round(newFats),
+            items,
+          };
+        }
+        return l;
+      });
+    });
 
     logMutation.mutate({
-      log_date: latestLog.log_date,
-      consumed_calories: Math.round(consumedCal),
-      consumed_protein: Math.round(consumedProt),
-      consumed_carbs: Math.round(consumedCarbs),
-      consumed_fats: Math.round(consumedFats),
+      log_date: todayLog.log_date,
+      consumed_calories: Math.round(newCal),
+      consumed_protein: Math.round(newProt),
+      consumed_carbs: Math.round(newCarbs),
+      consumed_fats: Math.round(newFats),
       items,
       notes: "Updated from interactive dashboard",
     });
   };
 
-  const targetCal = activePlan?.target_calories || profile?.target_calories || 2000;
-  const targetProt = activePlan?.target_protein || profile?.target_protein_g || 150;
-  const targetCarbs = activePlan?.target_carbs || profile?.target_carbs_g || 200;
-  const targetFats = activePlan?.target_fats || profile?.target_fats_g || 65;
+  // Build chart dataset from today forward for the plan duration (matching user's design)
+  const logsMap = new Map<string, any>();
+  logs.forEach((l: any) => logsMap.set(l.log_date, l));
+  if (todayLog) logsMap.set(todayLog.log_date, todayLog);
 
-  const consumedCal = latestLog ? Math.round(latestLog.consumed_calories) : Math.round(targetCal * 0.72);
-  const consumedProt = latestLog ? Math.round(latestLog.consumed_protein) : Math.round(targetProt * 0.75);
-  const consumedCarbs = latestLog ? Math.round(latestLog.consumed_carbs) : Math.round(targetCarbs * 0.70);
-  const consumedFats = latestLog ? Math.round(latestLog.consumed_fats) : Math.round(targetFats * 0.68);
+  const chartData: any[] = [];
+  const baseDate = new Date(); // Start at today
+  for (let i = 0; i < planDays; i++) {
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() + i);
+    const dStr = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const entry = logsMap.get(dStr);
+    chartData.push({
+      date: dStr,
+      label,
+      calories: entry ? Math.round(entry.consumed_calories) : 0,
+      target: Math.round(targetCal),
+    });
+  }
 
-  const caloriePct = Math.min(100, Math.round((consumedCal / targetCal) * 100));
-
-  // Historical chart data
-  const chartData = logs.map((l: any) => ({
-    date: l.log_date.slice(5),
-    calories: Math.round(l.consumed_calories),
-    target: Math.round(l.target_calories),
-  }));
-
-  // Weekly Nutrition Totals across the active 7-day plan
-  const planDays = activePlan?.days || [];
-  const weeklyTotalCal = planDays.reduce((acc: number, d: any) => acc + d.total_calories, 0);
-  const weeklyTotalProt = planDays.reduce((acc: number, d: any) => acc + d.total_protein, 0);
-  const weeklyTotalCarbs = planDays.reduce((acc: number, d: any) => acc + d.total_carbs, 0);
-  const weeklyTotalFats = planDays.reduce((acc: number, d: any) => acc + d.total_fats, 0);
-
-  // Grocery count
-  const groceryList: Record<string, string[]> = (activePlan?.grocery_list as Record<string, string[]>) || {};
-  const totalGroceryItems: number = Object.values(groceryList).reduce((acc: number, items: any) => acc + (Array.isArray(items) ? items.length : 0), 0);
+  const getMealIcon = (mealType: string) => {
+    const type = mealType.toLowerCase();
+    if (type.includes("breakfast")) return <Sun className="w-4 h-4 text-emerald-600" />;
+    if (type.includes("lunch")) return <Utensils className="w-4 h-4 text-emerald-600" />;
+    if (type.includes("dinner")) return <CookingPot className="w-4 h-4 text-emerald-600" />;
+    return <Apple className="w-4 h-4 text-emerald-600" />;
+  };
 
   if (!mounted) return null;
 
@@ -133,15 +175,11 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs tracking-wider uppercase">
-            <Sparkles className="w-4 h-4" />
-            <span>Autonomous Nutritional Telemetry</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-            Clinical Nutrition & Adherence Dashboard
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Nutritional Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real-time macro-nutrient telemetry synchronized with LangGraph autonomous multi-agent state
+            Track your daily nutrition and progress.
           </p>
         </div>
 
@@ -150,28 +188,28 @@ export default function DashboardPage() {
             href="/planner"
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
           >
-            <ChefHat className="w-4 h-4" />
-            <span>Generate Meal Plan</span>
+            <RotateCw className="w-4 h-4" />
+            <span>Generate New Plan</span>
           </Link>
           <Link
             href="/grocery"
             className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 shadow-sm transition"
           >
             <ShoppingCart className="w-4 h-4 text-emerald-600" />
-            <span>Grocery Manifest</span>
-            <ArrowUpRight className="w-4 h-4" />
+            <span>View Grocery List</span>
+            <ArrowUpRight className="w-4 h-4 text-slate-400" />
           </Link>
         </div>
       </div>
 
-      {/* Top 4 KPI Cards: Calorie, Protein, Carbs, Fats Progress */}
+      {/* Top 4 KPI Cards: Calories, Protein, Carbohydrates, Fats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Calories Card */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Calories Today</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Flame className="w-4 h-4" />
+            <span className="text-xs font-medium text-slate-500">Calories Today</span>
+            <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Flame className="w-3.5 h-3.5" />
             </div>
           </div>
           <div>
@@ -181,23 +219,22 @@ export default function DashboardPage() {
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
               <div
-                className="bg-emerald-500 h-2 rounded-full transition-all"
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${caloriePct}%` }}
               />
             </div>
           </div>
-          <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" />
-            {caloriePct}% daily energy fulfilled
+          <span className="text-[11px] text-emerald-600 font-medium">
+            {caloriePct}% of daily goal
           </span>
         </div>
 
         {/* Protein Card */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Protein Progress</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Dumbbell className="w-4 h-4" />
+            <span className="text-xs font-medium text-slate-500">Protein</span>
+            <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Dumbbell className="w-3.5 h-3.5" />
             </div>
           </div>
           <div>
@@ -207,22 +244,22 @@ export default function DashboardPage() {
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(100, Math.round((consumedProt / targetProt) * 100))}%` }}
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${protPct}%` }}
               />
             </div>
           </div>
-          <span className="text-[11px] text-blue-600 font-semibold">
-            {Math.round((consumedProt / targetProt) * 100)}% muscle retention target
+          <span className="text-[11px] text-emerald-600 font-medium">
+            {protPct}% of daily goal
           </span>
         </div>
 
-        {/* Carbs Card */}
+        {/* Carbohydrates Card */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Carbohydrates</span>
-            <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
-              <Wheat className="w-4 h-4" />
+            <span className="text-xs font-medium text-slate-500">Carbohydrates</span>
+            <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Wheat className="w-3.5 h-3.5" />
             </div>
           </div>
           <div>
@@ -232,22 +269,22 @@ export default function DashboardPage() {
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
               <div
-                className="bg-sky-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(100, Math.round((consumedCarbs / targetCarbs) * 100))}%` }}
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${carbsPct}%` }}
               />
             </div>
           </div>
-          <span className="text-[11px] text-sky-600 font-semibold">
-            {Math.round((consumedCarbs / targetCarbs) * 100)}% glycogen replenishment
+          <span className="text-[11px] text-emerald-600 font-medium">
+            {carbsPct}% of daily goal
           </span>
         </div>
 
         {/* Fats Card */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Healthy Fats</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Droplet className="w-4 h-4" />
+            <span className="text-xs font-medium text-slate-500">Fats</span>
+            <div className="w-7 h-7 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center">
+              <Droplet className="w-3.5 h-3.5" />
             </div>
           </div>
           <div>
@@ -257,147 +294,23 @@ export default function DashboardPage() {
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
               <div
-                className="bg-amber-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(100, Math.round((consumedFats / targetFats) * 100))}%` }}
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${fatsPct}%` }}
               />
             </div>
           </div>
-          <span className="text-[11px] text-amber-600 font-semibold">
-            {Math.round((consumedFats / targetFats) * 100)}% cellular & hormonal balance
+          <span className="text-[11px] text-emerald-600 font-medium">
+            {fatsPct}% of daily goal
           </span>
         </div>
       </div>
 
-      {/* Requirement 10: Three Specialized Clinical Metric Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Panel 1: Weekly Nutrition Summary */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                <Calendar className="w-4 h-4" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Weekly Nutrition Summary</h3>
-            </div>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-              {planDays.length || 7} Days
-            </span>
-          </div>
-
-          <div className="space-y-2.5 text-xs">
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Total Weekly Energy:</span>
-              <b className="text-slate-900 font-bold">{Math.round(weeklyTotalCal)} kcal</b>
-            </div>
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Total Weekly Protein:</span>
-              <b className="text-emerald-700 font-bold">{Math.round(weeklyTotalProt)}g</b>
-            </div>
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Total Weekly Carbs:</span>
-              <b className="text-sky-700 font-bold">{Math.round(weeklyTotalCarbs)}g</b>
-            </div>
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Total Weekly Fats:</span>
-              <b className="text-amber-700 font-bold">{Math.round(weeklyTotalFats)}g</b>
-            </div>
-            <div className="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-100">
-              <span>Daily Calorie Average:</span>
-              <b className="text-slate-900 font-bold">
-                {planDays.length ? Math.round(weeklyTotalCal / planDays.length) : Math.round(targetCal)} kcal/day
-              </b>
-            </div>
-          </div>
-        </div>
-
-        {/* Panel 2: Dietary Compliance Status */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Dietary Compliance Status</h3>
-            </div>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              Audit Passed
-            </span>
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-start gap-2 text-emerald-900">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold block">Strict Vegetarian Protocol</span>
-                <span className="text-[11px] text-emerald-700">100% verified egg-free, meat-free & seafood-free</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2 text-slate-800">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold block">Allergen Exclusion Shield</span>
-                <span className="text-[11px] text-slate-500">0 critical cross-contact ingredients detected</span>
-              </div>
-            </div>
-
-            <p className="text-[10px] text-slate-400 italic pt-1">
-              {activePlan?.verification?.remarks || "Validated by LangGraph Constraint Verifier Agent"}
-            </p>
-          </div>
-        </div>
-
-        {/* Panel 3: Weekly Grocery Summary */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-                <ShoppingCart className="w-4 h-4" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Weekly Grocery Summary</h3>
-            </div>
-            <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-              {totalGroceryItems} Items
-            </span>
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Supermarket Aisle Zones:</span>
-              <b className="text-slate-900 font-bold">{Object.keys(groceryList).length} Zones</b>
-            </div>
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Consolidated Duplicate Ingredients:</span>
-              <b className="text-emerald-700 font-bold">100% Merged</b>
-            </div>
-            <div className="flex justify-between items-center text-slate-600">
-              <span>Fulfillment Status:</span>
-              <b className="text-slate-900 font-bold">Ready for Procurement</b>
-            </div>
-
-            <Link
-              href="/grocery"
-              className="mt-3 w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
-            >
-              <ShoppingCart className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Open Grocery Aisle Checklist</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: Macro Breakdown Donut & 7-Day Intake Trend */}
+      {/* Main Grid: Macro Breakdown Donut & Intake vs Target Bar Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 1: Interactive Macro Donut */}
+        {/* Card 1: Daily Macronutrient Distribution */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Target Macronutrient Distribution</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Calculated by Mifflin-St Jeor & Macro Optimizer Agent</p>
-            </div>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              {profile?.health_goal ? profile.health_goal.replace("_", " ").toUpperCase() : "BALANCED"}
-            </span>
+          <div className="border-b border-slate-100 pb-3">
+            <h3 className="text-base font-bold text-slate-900">Daily Macronutrient Distribution</h3>
           </div>
 
           <MacroChart
@@ -408,85 +321,169 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Card 2: 7-Day Caloric Intake Bar Chart */}
+        {/* Card 2: Calorie Intake & Target Chart */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          {/* Header & Plan Badge (Matching Screenshot) */}
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900">7-Day Caloric Intake vs Target</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Historical tracking and goal adherence telemetry</p>
+              <h3 className="text-base font-bold text-slate-900">Calorie Intake & Target</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time tracking synchronized with your active {planDays}-day plan
+              </p>
+              <div className="flex items-center gap-4 text-xs text-slate-600 font-medium mt-3">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 bg-emerald-500 rounded-sm inline-block" />
+                  Actual intake
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-5 border-t-2 border-dashed border-slate-400 inline-block" />
+                  Daily target
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Weekly Trend</span>
+
+            <div className="text-right space-y-1 shrink-0">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{planDays}-Day Target Plan</span>
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400 font-medium">
+                {planDays} daily targets scheduled
+              </div>
+              <div>
+                <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[11px] font-semibold">
+                  Daily target • {Math.round(targetCal).toLocaleString()} kcal
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="h-64">
+          {/* Chart Canvas */}
+          <div className="h-64 pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData.length ? chartData : [{ date: "Today", calories: consumedCal, target: targetCal }]}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748B" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748B" }} domain={[0, 'auto']} />
+              <BarChart data={chartData} margin={{ top: 24, right: 10, left: -15, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis 
+                  dataKey="label" 
+                  tick={{ fontSize: 11, fill: "#64748B" }} 
+                  axisLine={{ stroke: "#E2E8F0" }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  domain={[0, (dataMax: number) => Math.max(2500, Math.ceil((targetCal + 200) / 500) * 500)]}
+                  ticks={[0, 500, 1000, 1500, 2000, 2500]}
+                  tick={{ fontSize: 11, fill: "#64748B" }} 
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <Tooltip
+                  formatter={(val: any) => [`${Number(val).toLocaleString()} kcal`, "Actual Intake"]}
                   contentStyle={{ backgroundColor: "#0F172A", borderRadius: "8px", border: "none", color: "#fff", fontSize: "12px" }}
                 />
-                <Bar dataKey="calories" name="Consumed Calories" fill="#10B981" radius={[4, 4, 0, 0]} />
+                <ReferenceLine 
+                  y={targetCal} 
+                  stroke="#CBD5E1" 
+                  strokeDasharray="4 4" 
+                  strokeWidth={1.5} 
+                />
+                <Bar 
+                  dataKey="calories" 
+                  name="Actual Intake" 
+                  fill="#10B981" 
+                  radius={[4, 4, 0, 0]} 
+                  maxBarSize={48}
+                >
+                  <LabelList
+                    dataKey="calories"
+                    content={(props: any) => {
+                      const { x, y, width, value } = props;
+                      if (value && Number(value) > 0) {
+                        return (
+                          <text
+                            x={Number(x) + Number(width) / 2}
+                            y={Number(y) - 8}
+                            fill="#0F172A"
+                            textAnchor="middle"
+                            fontSize={11}
+                            fontWeight={700}
+                          >
+                            {Number(value).toLocaleString()} kcal
+                          </text>
+                        );
+                      }
+                      return (
+                        <text
+                          x={Number(x) + Number(width) / 2}
+                          y={Number(y) - 12}
+                          fill="#94A3B8"
+                          textAnchor="middle"
+                          fontSize={10}
+                          fontWeight={500}
+                        >
+                          ⓘ No data yet
+                        </text>
+                      );
+                    }}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Interactive Daily Meal Consumption Checklist */}
+      {/* Interactive Today's Meals Section */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Today's Meal Adherence Checklist</h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Check off meals eaten to dynamically synchronize server-state intake via React Query
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <Utensils className="w-4 h-4" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Today's Meals</h3>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
-            Active Plan: <b>{activePlan ? activePlan.title : "Default AI Balanced Protocol"}</b>
+          <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
+            Active Plan: {activePlan ? activePlan.title : "3-Day AI Optimized Meal Plan (Balanced)"}
           </span>
         </div>
 
-        {latestLog && latestLog.items && latestLog.items.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            {latestLog.items.map((item: any, idx: number) => (
+        {todayLog && todayLog.items && todayLog.items.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+            {todayLog.items.map((item: any, idx: number) => (
               <div
                 key={idx}
                 onClick={() => handleToggleMeal(idx)}
-                className={`p-4 rounded-2xl border cursor-pointer transition select-none flex items-start justify-between gap-3 ${
+                className={`p-4 rounded-2xl border cursor-pointer transition select-none flex items-center justify-between gap-3 shadow-xs ${
                   item.completed
-                    ? "bg-emerald-50/70 border-emerald-300"
-                    : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                    ? "bg-emerald-50/40 border-emerald-300"
+                    : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
                 }`}
               >
-                <div>
-                  <span
-                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      item.completed
-                        ? "bg-emerald-200 text-emerald-800"
-                        : "bg-slate-200 text-slate-700"
-                    }`}
-                  >
-                    {item.meal_type}
-                  </span>
-                  <h4 className="text-sm font-bold text-slate-900 mt-1.5">{item.name}</h4>
-                  <div className="text-xs text-slate-500 mt-1">
-                    {Math.round(item.calories)} kcal • {item.protein}g P • {item.carbs}g C • {item.fats}g F
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    {getMealIcon(item.meal_type || item.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-bold text-slate-900 truncate">{item.name}</h4>
+                    <p className="text-xs text-slate-400 truncate max-w-[130px] sm:max-w-[150px]">
+                      {item.summary || `${Math.round(item.calories)} kcal meal`}
+                    </p>
                   </div>
                 </div>
 
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition ${
-                    item.completed
-                      ? "bg-emerald-600 text-white"
-                      : "border-2 border-slate-300 bg-white"
-                  }`}
-                >
-                  {item.completed && <CheckCircle2 className="w-4 h-4" />}
+                <div className="shrink-0">
+                  {item.completed ? (
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2.5 py-1 rounded-full">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Completed
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                      <Circle className="w-3.5 h-3.5 text-slate-300" />
+                      Pending
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

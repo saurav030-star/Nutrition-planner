@@ -37,7 +37,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/planner", label: "AI Planner", icon: ChefHat },
-    { href: "/grocery", label: "Grocery & PDF Export", icon: ShoppingCart },
+    { href: "/grocery", label: "Grocery List", icon: ShoppingCart },
   ];
 
   return (

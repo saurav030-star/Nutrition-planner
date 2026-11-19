@@ -6,6 +6,7 @@ from datetime import date, datetime
 class LoggedMealItem(BaseModel):
     meal_type: str
     name: str
+    summary: Optional[str] = None
     calories: float
     protein: float
     carbs: float

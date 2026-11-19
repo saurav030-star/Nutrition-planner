@@ -295,10 +295,36 @@ RECIPE_DATABASE: List[Dict[str, Any]] = [
         ]
     },
     {
+        "id": "med_avocado_toast_poached_eggs",
+        "name": "Artisan Sourdough Avocado Toast with Poached Eggs",
+        "meal_type": "breakfast",
+        "diet_types": ["balanced", "high_protein", "mediterranean"],
+        "allergens": ["gluten", "eggs"],
+        "calories": 485.0,
+        "protein": 26.0,
+        "carbs": 38.0,
+        "fats": 25.0,
+        "prep_time_minutes": 10,
+        "cook_time_minutes": 10,
+        "description": "Toasted sourdough bread topped with freshly mashed Hass avocado, microgreens, chili flakes, and two pasture-raised poached eggs.",
+        "ingredients": [
+            {"name": "Artisan Sourdough Bread", "quantity": 2, "unit": "slices", "aisle": "Grains & Bakery", "calories": 160.0, "protein": 6.0, "carbs": 30.0, "fats": 1.0},
+            {"name": "Hass Avocado", "quantity": 70, "unit": "g", "aisle": "Vegetables", "calories": 115.0, "protein": 1.5, "carbs": 6.0, "fats": 10.5},
+            {"name": "Pasture-Raised Poached Eggs", "quantity": 2, "unit": "whole", "aisle": "Dairy & Plant Milks", "calories": 140.0, "protein": 12.5, "carbs": 1.0, "fats": 9.5},
+            {"name": "Microgreens & Hemp Seeds", "quantity": 15, "unit": "g", "aisle": "Vegetables", "calories": 70.0, "protein": 6.0, "carbs": 1.0, "fats": 4.0}
+        ],
+        "instructions": [
+            "Toast sourdough bread slices until golden brown and crisp.",
+            "Mash fresh Hass avocado with lemon juice, sea salt, and black pepper; spread evenly over toast.",
+            "Poach two eggs in gently simmering water for 3 minutes until whites are firm and yolks soft.",
+            "Top toast with poached eggs, hemp seeds, and fresh microgreens."
+        ]
+    },
+    {
         "id": "veg_paneer_avocado_toast",
         "name": "Artisan Sourdough Avocado Toast with Spiced Grilled Paneer",
         "meal_type": "breakfast",
-        "diet_types": ["vegetarian", "balanced", "high_protein"],
+        "diet_types": ["vegetarian"],
         "allergens": ["gluten", "dairy"],
         "calories": 485.0,
         "protein": 22.5,
@@ -868,5 +894,29 @@ def search_recipes(
             continue
             
         results.append(r)
+
+    # For balanced and high_protein diets without animal allergen exclusions, prioritize complete balanced proteins (chicken, salmon, turkey, eggs)
+    if dt in ["balanced", "high_protein", "mediterranean"]:
+        has_egg_fish_exclusion = any(a in exclude_set for a in ["eggs", "fish", "shellfish"])
+        def recipe_priority(recipe):
+            name_lower = recipe.get("name", "").lower()
+            if "poached egg" in name_lower and "eggs" not in exclude_set:
+                return 0
+            if "mediterranean herb chicken" in name_lower and not has_egg_fish_exclusion:
+                return 0
+            if "lemon herb salmon" in name_lower and "fish" not in exclude_set:
+                return 0
+            if "greek yogurt parfait" in name_lower and "dairy" not in exclude_set:
+                return 0
+
+            is_signature_omnivore = any(k in name_lower for k in [
+                "chicken", "salmon", "turkey", "steak", "poached egg", "omelet", "beef", "fish"
+            ])
+            if is_signature_omnivore and not has_egg_fish_exclusion:
+                return 1
+            if "high_protein" in recipe.get("diet_types", []):
+                return 2
+            return 3
+        results.sort(key=recipe_priority)
 
     return results

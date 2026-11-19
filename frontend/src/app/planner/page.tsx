@@ -12,18 +12,20 @@ import {
   ChefHat, 
   Play, 
   Download, 
-  ShoppingCart, 
+  ShoppingBag, 
   Calendar, 
   CheckCircle2, 
   AlertCircle, 
-  Activity, 
   SlidersHorizontal,
-  Info
+  Minus,
+  Plus,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 
 const ALLERGEN_OPTIONS = [
   { id: "peanuts", label: "Peanuts" },
-  { id: "tree_nuts", label: "Tree Nuts (Almonds, Walnuts)" },
+  { id: "tree_nuts", label: "Tree Nuts (Almonds, ...)" },
   { id: "dairy", label: "Dairy / Lactose" },
   { id: "gluten", label: "Gluten / Wheat" },
   { id: "shellfish", label: "Shellfish" },
@@ -38,13 +40,13 @@ export default function PlannerPage() {
   const [mounted, setMounted] = useState(false);
 
   // Form State
-  const [age, setAge] = useState(25);
+  const [age, setAge] = useState(21);
   const [gender, setGender] = useState("male");
-  const [weight, setWeight] = useState(70.0);
-  const [height, setHeight] = useState(175.0);
+  const [weight, setWeight] = useState(60.0);
+  const [height, setHeight] = useState(173.0);
   const [activityLevel, setActivityLevel] = useState("moderately_active");
-  const [healthGoal, setHealthGoal] = useState("weight_loss");
-  const [dietType, setDietType] = useState("vegetarian");
+  const [healthGoal, setHealthGoal] = useState("maintenance");
+  const [dietType, setDietType] = useState("balanced");
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
   const [durationDays, setDurationDays] = useState(7);
 
@@ -89,13 +91,13 @@ export default function PlannerPage() {
 
   useEffect(() => {
     if (profile) {
-      setAge(profile.age || 25);
+      setAge(profile.age || 21);
       setGender(profile.gender || "male");
-      setWeight(profile.weight || 70.0);
-      setHeight(profile.height || 175.0);
+      setWeight(profile.weight || 60.0);
+      setHeight(profile.height || 173.0);
       setActivityLevel(profile.activity_level || "moderately_active");
-      setHealthGoal(profile.health_goal || "weight_loss");
-      setDietType(profile.diet_type || "vegetarian");
+      setHealthGoal(profile.health_goal || "maintenance");
+      setDietType(profile.diet_type || "balanced");
       if (profile.allergies) {
         const splitted = profile.allergies.split(",").map((a: string) => a.trim().toLowerCase());
         setSelectedAllergies(splitted.filter(Boolean));
@@ -174,36 +176,8 @@ export default function PlannerPage() {
 
   const currentDay: DayMealPlan | undefined = activePlan?.days?.[selectedDayIndex];
 
-  // Calculate actual plan average daily calories and macros across generated days
-  const actualAvgCal = activePlan?.days?.length 
-    ? Math.round(activePlan.days.reduce((acc, d) => acc + d.total_calories, 0) / activePlan.days.length)
-    : Math.round(activePlan?.target_calories || 2000);
-  const actualAvgProt = activePlan?.days?.length 
-    ? (activePlan.days.reduce((acc, d) => acc + d.total_protein, 0) / activePlan.days.length).toFixed(1)
-    : (activePlan?.target_protein || 150).toFixed(1);
-  const actualAvgCarbs = activePlan?.days?.length 
-    ? (activePlan.days.reduce((acc, d) => acc + d.total_carbs, 0) / activePlan.days.length).toFixed(1)
-    : (activePlan?.target_carbs || 200).toFixed(1);
-  const actualAvgFats = activePlan?.days?.length 
-    ? (activePlan.days.reduce((acc, d) => acc + d.total_fats, 0) / activePlan.days.length).toFixed(1)
-    : (activePlan?.target_fats || 65).toFixed(1);
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs tracking-wider uppercase">
-          <Sparkles className="w-4 h-4" />
-          <span>Autonomous LangGraph State Machine</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-          Multi-Agent Nutrition Generator
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl">
-          Profile Analyzer computes clinical BMR/TDEE &rarr; Macro Optimizer allocates exact grams &rarr; Recipe Generator synthesizes complete 7-day schedules &rarr; Constraint Verifier executes allergen & dietary protocol audits with self-correction retry loops.
-        </p>
-      </div>
-
       {/* Error Alert Banner if 422 LangGraph Constraint Verification Rejection */}
       {generationError && (
         <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-start gap-3 text-rose-900 text-xs">
@@ -218,14 +192,7 @@ export default function PlannerPage() {
       {/* Main Layout: Configuration Form & Meal Plan Results */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Form (4 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Biometrics & Constraints
-            </h3>
-          </div>
-
+        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-5">
           <form onSubmit={handleGenerate} className="space-y-4">
             {/* Age & Gender */}
             <div className="grid grid-cols-2 gap-3">
@@ -310,28 +277,35 @@ export default function PlannerPage() {
               </select>
             </div>
 
-            {/* Dietary Framework */}
+            {/* Diet Preference */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Dietary Framework</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Diet Preference</label>
               <select
                 value={dietType}
                 onChange={(e) => setDietType(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-emerald-50/30 font-medium text-slate-900"
+                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-slate-900"
               >
+                <option value="balanced">Balanced / High-Protein</option>
                 <option value="vegetarian">Vegetarian (Strictly Egg-Free & Meat-Free)</option>
                 <option value="vegan">100% Plant-Based Vegan</option>
-                <option value="balanced">Balanced Whole Foods</option>
                 <option value="high_protein">High-Protein Hypertrophy (35% Protein)</option>
                 <option value="low_carb">Low-Carb / Ketogenic</option>
                 <option value="gluten_free">Strict Gluten-Free</option>
+                <option value="mediterranean">Mediterranean Heart-Healthy</option>
+                <option value="paleo">Paleo Whole-Foods</option>
               </select>
             </div>
 
-            {/* Strict Allergen Exclusions */}
+            {/* Food Allergies & Restrictions */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-2">
-                Strict Allergen Exclusions ({selectedAllergies.length} selected)
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-700">
+                  Food Allergies & Restrictions
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {selectedAllergies.length} selected
+                </span>
+              </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {ALLERGEN_OPTIONS.map((opt) => {
                   const checked = selectedAllergies.includes(opt.id);
@@ -355,43 +329,63 @@ export default function PlannerPage() {
               </div>
             </div>
 
-            {/* Plan Duration */}
+            {/* Plan Duration Stepper Control (Matching Screenshot 2) */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Plan Duration
-              </label>
-              <div className="flex gap-2">
-                {[1, 3, 7].map((days) => (
-                  <button
-                    key={days}
-                    type="button"
-                    onClick={() => setDurationDays(days)}
-                    className={`flex-1 py-1.5 text-xs font-semibold rounded-xl border transition ${
-                      durationDays === days
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    {days} {days === 1 ? "Day" : "Days"}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[11px] font-semibold text-slate-700">
+                  Plan Duration
+                </label>
+                <span className="text-[11px] text-slate-400">1 – 90 days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDurationDays((prev) => Math.max(1, prev - 1))}
+                  className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition font-bold select-none"
+                  title="Decrease Days"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <div className="flex-1 flex items-center justify-center py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={durationDays}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) setDurationDays(Math.min(90, Math.max(1, val)));
+                    }}
+                    className="w-10 text-center font-bold text-slate-900 bg-transparent text-sm focus:outline-none"
+                  />
+                  <span className="text-xs text-slate-400 font-medium ml-1">Days</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDurationDays((prev) => Math.min(90, prev + 1))}
+                  className="w-10 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition font-bold select-none shadow-xs"
+                  title="Increase Days"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={generateMutation.isPending}
-              className="w-full mt-4 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+              className="w-full mt-4 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {generateMutation.isPending ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Executing Multi-Agent LangGraph...</span>
+                  <span>Generating AI Meal Plan...</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-4 h-4" />
-                  <span>Execute Multi-Agent Pipeline</span>
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Generate Meal Plan</span>
                 </>
               )}
             </button>
@@ -402,27 +396,21 @@ export default function PlannerPage() {
         <div className="lg:col-span-8 space-y-6">
           {activePlan ? (
             <div className="space-y-6">
-              {/* Plan Action Bar with Target vs Actual Separation */}
+              {/* Plan Action Bar */}
               <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                      Verified Plan
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
+                      PLAN READY
                     </span>
-                    <span className="text-xs text-slate-600 font-medium">
-                      Calculated Adherence: <b className="text-emerald-700">{activePlan.adherence_score}%</b>
+                    <span className="text-xs text-slate-500 font-medium">
+                      Adherence: <b className="text-slate-800 font-bold">{activePlan.adherence_score}%</b>
                     </span>
                   </div>
                   <h2 className="text-lg font-bold text-slate-900 mt-1">{activePlan.title}</h2>
                   
-                  {/* Separate Target vs Actual Nutritional Breakdown */}
-                  <div className="text-xs text-slate-500 mt-2 space-y-0.5">
-                    <div>
-                      <span className="font-semibold text-slate-700">Target Calories & Macros:</span> {Math.round(activePlan.target_calories)} kcal • {activePlan.target_protein}g P • {activePlan.target_carbs}g C • {activePlan.target_fats}g F
-                    </div>
-                    <div>
-                      <span className="font-semibold text-emerald-700">Actual Calculated Daily Avg:</span> {actualAvgCal} kcal • {actualAvgProt}g P • {actualAvgCarbs}g C • {actualAvgFats}g F
-                    </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    <span className="font-semibold text-slate-700">Target:</span> {Math.round(activePlan.target_calories)} kcal • {activePlan.target_protein}g P • {activePlan.target_carbs}g C • {activePlan.target_fats}g F
                   </div>
                 </div>
 
@@ -437,68 +425,111 @@ export default function PlannerPage() {
                   </button>
                   <Link
                     href="/grocery"
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200 transition"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200 transition shadow-xs"
                   >
-                    <ShoppingCart className="w-4 h-4 text-emerald-600" />
-                    <span>Grocery Manifest</span>
+                    <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                    <span>Grocery List</span>
                   </Link>
                 </div>
               </div>
 
-              {/* Complete Seven-Day Navigation Bar (Grid cols 7 on md/lg desktop: Monday to Sunday) */}
-              {activePlan.days && activePlan.days.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
-                    <span>Select Day ({activePlan.days.length} Days Generated)</span>
-                    <span className="text-emerald-600">Active: Day {selectedDayIndex + 1} ({activePlan.days[selectedDayIndex]?.day_name})</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 pb-1">
-                    {activePlan.days.map((day, idx) => (
-                      <button
-                        key={day.day_number}
-                        onClick={() => setSelectedDayIndex(idx)}
-                        className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border text-center ${
-                          selectedDayIndex === idx
-                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20"
-                            : "bg-white text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-200"
-                        }`}
-                      >
-                        <Calendar className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">
-                          {day.day_name.slice(0, 3)} (D{day.day_number})
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Day Navigation Bar & Stepper Pagination (Matching Screenshot 2) */}
+              {activePlan.days && activePlan.days.length > 0 && (() => {
+                const totalDays = activePlan.days.length;
+                const windowSize = 4;
+                let windowStart = Math.max(0, Math.min(selectedDayIndex - 1, totalDays - windowSize));
+                if (windowStart < 0) windowStart = 0;
+                const visibleDays = activePlan.days.slice(windowStart, windowStart + windowSize);
 
-              {/* Day Nutrition Banner with Independent Daily Totals */}
+                return (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    {/* Day Tabs */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {visibleDays.map((day) => {
+                        const idx = activePlan.days.findIndex((d) => d.day_number === day.day_number);
+                        const isSelected = selectedDayIndex === idx;
+
+                        return (
+                          <button
+                            key={day.day_number}
+                            type="button"
+                            onClick={() => setSelectedDayIndex(idx)}
+                            className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border select-none ${
+                              isSelected
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                            }`}
+                          >
+                            <Calendar className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              Day {day.day_number} ({day.day_name.slice(0, 3)})
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination Stepper (< Day 1 of 7 >) */}
+                    <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDayIndex((prev) => Math.max(0, prev - 1))}
+                        disabled={selectedDayIndex === 0}
+                        className="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white transition"
+                        title="Previous Day"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5 text-slate-600" />
+                      </button>
+                      <span className="px-2 text-xs text-slate-600 font-semibold select-none">
+                        Day {selectedDayIndex + 1} of {totalDays}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDayIndex((prev) => Math.min(totalDays - 1, prev + 1))}
+                        disabled={selectedDayIndex === totalDays - 1}
+                        className="w-7 h-7 rounded-lg border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white transition"
+                        title="Next Day"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Day Nutrition Banner with Independent Daily Totals (Matching Screenshot 2) */}
               {currentDay && (
                 <div className="bg-emerald-950 text-emerald-100 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs shadow-sm">
                   <div>
                     <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
-                      Day {currentDay.day_number} Daily Total
+                      DAILY NUTRITION SUMMARY
                     </span>
-                    <h3 className="text-base font-bold text-white">{currentDay.day_name} Nutrition</h3>
+                    <h3 className="text-base font-bold text-white mt-0.5">{currentDay.day_name} Nutrition</h3>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs font-semibold">
-                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
-                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Calories</span>
-                      <span>{Math.round(currentDay.total_calories)} kcal</span>
+                  <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-semibold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>Nutrition Checks Passed</span>
                     </div>
-                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
-                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Protein</span>
-                      <span>{currentDay.total_protein}g</span>
-                    </div>
-                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
-                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Carbs</span>
-                      <span>{currentDay.total_carbs}g</span>
-                    </div>
-                    <div className="bg-emerald-900/50 px-3 py-1.5 rounded-xl border border-emerald-800">
-                      <span className="text-emerald-400 text-[10px] block uppercase font-bold">Fats</span>
-                      <span>{currentDay.total_fats}g</span>
+
+                    <div className="flex items-center gap-4 text-xs font-semibold">
+                      <div>
+                        <span className="text-emerald-400 text-[10px] block uppercase font-bold">CALORIES</span>
+                        <span>{Math.round(currentDay.total_calories)} kcal</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-400 text-[10px] block uppercase font-bold">PROTEIN</span>
+                        <span>{currentDay.total_protein}g</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-400 text-[10px] block uppercase font-bold">CARBS</span>
+                        <span>{currentDay.total_carbs}g</span>
+                      </div>
+                      <div>
+                        <span className="text-emerald-400 text-[10px] block uppercase font-bold">FATS</span>
+                        <span>{currentDay.total_fats}g</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -520,7 +551,7 @@ export default function PlannerPage() {
               </div>
               <h3 className="text-lg font-bold text-slate-900">No Active Meal Plan</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Configure your biometrics and allergen boundaries on the left, then click <b>Execute Multi-Agent Pipeline</b> to launch LangGraph!
+                Configure your biometrics and allergen boundaries on the left, then click <b>Generate Meal Plan</b> to create your plan!
               </p>
             </div>
           )}

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Query, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import date
 import json
 
 from app.core.database import get_db
@@ -8,6 +9,7 @@ from app.core.security import decode_access_token
 from app.models.user import User
 from app.models.profile import DietaryProfile
 from app.models.meal_plan import MealPlan
+from app.models.nutrition_log import NutritionLog
 from app.schemas.meal_plan import MealPlanGenerateRequest, MealPlanResponse
 from app.api.deps import get_current_user
 from app.agents.graph import run_nutrition_pipeline
@@ -118,6 +120,60 @@ def generate_plan(
     db.commit()
     db.refresh(new_plan)
     
+    # Synchronize today's log items with Day 1 of the newly generated active plan
+    today_log = db.query(NutritionLog).filter(
+        NutritionLog.user_id == current_user.id,
+        NutritionLog.log_date == date.today()
+    ).first()
+    
+    plan_dict = new_plan.get_plan()
+    day1_meals = []
+    if plan_dict and "days" in plan_dict and len(plan_dict["days"]) > 0:
+        day1_meals = plan_dict["days"][0].get("meals", [])
+        
+    items = []
+    for m in day1_meals:
+        m_type = m.get("meal_type", "meal").lower()
+        items.append({
+            "meal_type": m_type,
+            "name": m_type.capitalize() if m_type in ["breakfast", "lunch", "dinner", "snack", "snacks"] else "Meal",
+            "summary": m.get("title") or m.get("name") or "Healthy Meal",
+            "calories": round(float(m.get("calories", 0)), 1),
+            "protein": round(float(m.get("protein", 0)), 1),
+            "carbs": round(float(m.get("carbs", 0)), 1),
+            "fats": round(float(m.get("fats", 0)), 1),
+            "completed": False
+        })
+        
+    if today_log:
+        today_log.target_calories = round(new_plan.target_calories, 1)
+        today_log.target_protein = round(new_plan.target_protein, 1)
+        today_log.target_carbs = round(new_plan.target_carbs, 1)
+        today_log.target_fats = round(new_plan.target_fats, 1)
+        today_log.consumed_calories = 0.0
+        today_log.consumed_protein = 0.0
+        today_log.consumed_carbs = 0.0
+        today_log.consumed_fats = 0.0
+        today_log.items_json = json.dumps(items)
+        db.commit()
+    else:
+        new_today_log = NutritionLog(
+            user_id=current_user.id,
+            log_date=date.today(),
+            consumed_calories=0.0,
+            consumed_protein=0.0,
+            consumed_carbs=0.0,
+            consumed_fats=0.0,
+            target_calories=round(new_plan.target_calories, 1),
+            target_protein=round(new_plan.target_protein, 1),
+            target_carbs=round(new_plan.target_carbs, 1),
+            target_fats=round(new_plan.target_fats, 1),
+            items_json=json.dumps(items),
+            notes="Daily log initialized with active plan"
+        )
+        db.add(new_today_log)
+        db.commit()
+
     return format_meal_plan_response(new_plan)
 
 @router.get("", response_model=List[MealPlanResponse])
