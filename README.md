@@ -1,13 +1,5 @@
 # Enterprise-Grade AI Nutrition Planner (FoodTech Sector Automation)
 
-> **OJT Capstone Project Design Implementation**  
-> **Program:** B.Tech Computer Science & Engineering (AI/ML) 2025–2029  
-> **Student Researchers & Developers:**  
-> • **Saurav Sharma** (Registration No: `251810700281`)  
-> • **Nitish Kumar** (Registration No: `251810700125`)  
-> **Project Type:** Product Developer / Full-Stack AI Application Developer  
-> **Tech Stack:** Next.js, React, FastAPI, PostgreSQL / SQLite, LangGraph, React Query, Tailwind CSS, Python  
-
 ---
 
 ## 1. Problem Understanding & Vision
@@ -167,8 +159,6 @@ Sample CLI Output:
 ```text
 ================================================================================
 🚀 ENTERPRISE-GRADE AI NUTRITION PLANNER: TASKBENCH EVALUATION BENCHMARK
-   Year & Section: B.Tech CSE (AI/ML) 2025-2029
-   Student Researchers: Saurav Sharma (251810700281) | Nitish Kumar (251810700125)
 ================================================================================
 Executing Autonomous Multi-Agent LangGraph Benchmark Test Suite...
 
@@ -221,12 +211,3 @@ docker-compose up --build
 | `GET` | `/api/logs` | Fetch 7-day daily intake history and macro tracking |
 | `POST` | `/api/logs` | Record meal checklist completion & recalculate adherence |
 | `POST` | `/api/benchmark/run` | Execute TaskBench evaluation suite across 5 constraint scenarios |
-
----
-
-## 8. Academic Authors & Credits
-
-* **Saurav Sharma** (Registration: `251810700281`)
-* **Nitish Kumar** (Registration: `251810700125`)
-* **Department:** Computer Science & Engineering (Artificial Intelligence & Machine Learning)
-* **Academic Session:** 2025–2029
