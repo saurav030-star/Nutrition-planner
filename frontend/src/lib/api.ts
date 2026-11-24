@@ -1,6 +1,12 @@
 function getApiBase(): string {
-  let url = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
-  url = url.trim();
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!envUrl) {
+    if (typeof window !== "undefined") {
+      return "/api";
+    }
+    return "http://127.0.0.1:8000/api";
+  }
+  let url = envUrl.trim();
   if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
     url = `https://${url}`;
   }
