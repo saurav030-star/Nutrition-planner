@@ -1,4 +1,17 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+function getApiBase(): string {
+  let url = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+  url = url.trim();
+  if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  url = url.replace(/\/+$/, "");
+  if (!url.endsWith("/api")) {
+    url = `${url}/api`;
+  }
+  return url;
+}
+
+const API_BASE = getApiBase();
 
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
