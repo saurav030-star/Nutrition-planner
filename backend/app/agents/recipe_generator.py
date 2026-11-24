@@ -205,7 +205,7 @@ def recipe_generator_node(state: AgentState) -> Dict[str, Any]:
         d_meal = scale_recipe_to_target(d_raw, target_calories * MEAL_DISTRIBUTION["dinner"]["cal_pct"])
         s_meal = scale_recipe_to_target(s_raw, target_calories * MEAL_DISTRIBUTION["snack"]["cal_pct"])
         
-        day_meals = [b_meal, l_meal, d_meal, s_meal]
+        day_meals = [b_meal, l_meal, s_meal, d_meal]
         
         # Daily calories and macros equal the exact sum of all meals
         total_cal = round(sum(m["calories"] for m in day_meals), 1)

@@ -535,12 +535,26 @@ export default function PlannerPage() {
                 </div>
               )}
 
-              {/* Meal Cards Grid (Breakfast, Lunch, Dinner, Snack) */}
+              {/* Meal Cards Grid (Breakfast, Lunch, Snack, Dinner) */}
               {currentDay && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentDay.meals.map((meal) => (
-                    <MealCard key={meal.id} meal={meal} />
-                  ))}
+                  {(() => {
+                    const MEAL_ORDER_INDEX: Record<string, number> = {
+                      breakfast: 0,
+                      lunch: 1,
+                      snack: 2,
+                      snacks: 2,
+                      dinner: 3,
+                    };
+                    const sortedMeals = [...currentDay.meals].sort((a, b) => {
+                      const typeA = (a.meal_type || a.name || "").toLowerCase();
+                      const typeB = (b.meal_type || b.name || "").toLowerCase();
+                      return (MEAL_ORDER_INDEX[typeA] ?? 99) - (MEAL_ORDER_INDEX[typeB] ?? 99);
+                    });
+                    return sortedMeals.map((meal) => (
+                      <MealCard key={meal.id} meal={meal} />
+                    ));
+                  })()}
                 </div>
               )}
             </div>

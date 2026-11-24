@@ -450,43 +450,61 @@ export default function DashboardPage() {
 
         {todayLog && todayLog.items && todayLog.items.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-            {todayLog.items.map((item: any, idx: number) => (
-              <div
-                key={idx}
-                onClick={() => handleToggleMeal(idx)}
-                className={`p-4 rounded-2xl border cursor-pointer transition select-none flex items-center justify-between gap-3 shadow-xs ${
-                  item.completed
-                    ? "bg-emerald-50/40 border-emerald-300"
-                    : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                    {getMealIcon(item.meal_type || item.name)}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-bold text-slate-900 truncate">{item.name}</h4>
-                    <p className="text-xs text-slate-400 truncate max-w-[130px] sm:max-w-[150px]">
-                      {item.summary || `${Math.round(item.calories)} kcal meal`}
-                    </p>
-                  </div>
-                </div>
+            {(() => {
+              const MEAL_ORDER_INDEX: Record<string, number> = {
+                breakfast: 0,
+                lunch: 1,
+                snack: 2,
+                snacks: 2,
+                dinner: 3,
+              };
 
-                <div className="shrink-0">
-                  {item.completed ? (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2.5 py-1 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Completed
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
-                      <Circle className="w-3.5 h-3.5 text-slate-300" />
-                      Pending
-                    </span>
-                  )}
+              const sortedItems = todayLog.items
+                .map((item: any, originalIndex: number) => ({ item, originalIndex }))
+                .sort((a: any, b: any) => {
+                  const typeA = (a.item.meal_type || a.item.name || "").toLowerCase();
+                  const typeB = (b.item.meal_type || b.item.name || "").toLowerCase();
+                  return (MEAL_ORDER_INDEX[typeA] ?? 99) - (MEAL_ORDER_INDEX[typeB] ?? 99);
+                });
+
+              return sortedItems.map(({ item, originalIndex }: any) => (
+                <div
+                  key={originalIndex}
+                  onClick={() => handleToggleMeal(originalIndex)}
+                  className={`p-4 rounded-2xl border cursor-pointer transition select-none flex items-center justify-between gap-3 shadow-xs ${
+                    item.completed
+                      ? "bg-emerald-50/40 border-emerald-300"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                      {getMealIcon(item.meal_type || item.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 truncate">{item.name}</h4>
+                      <p className="text-xs text-slate-400 truncate max-w-[130px] sm:max-w-[150px]">
+                        {item.summary || `${Math.round(item.calories)} kcal meal`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    {item.completed ? (
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 border border-emerald-200 px-2.5 py-1 rounded-full">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Completed
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                        <Circle className="w-3.5 h-3.5 text-slate-300" />
+                        Pending
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         ) : (
           <div className="text-center py-8 text-slate-500 text-xs">

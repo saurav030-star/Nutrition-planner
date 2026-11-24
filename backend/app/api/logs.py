@@ -62,8 +62,13 @@ def get_logs(
             if plan_dict and "days" in plan_dict and len(plan_dict["days"]) > 0:
                 day1_meals = plan_dict["days"][0].get("meals", [])
             
+            def meal_order_key(m):
+                mt = str(m.get("meal_type", "")).lower()
+                order = {"breakfast": 0, "lunch": 1, "snack": 2, "snacks": 2, "dinner": 3}
+                return order.get(mt, 4)
+
             items = []
-            for m in day1_meals:
+            for m in sorted(day1_meals, key=meal_order_key):
                 m_type = m.get("meal_type", "meal").lower()
                 items.append({
                     "meal_type": m_type,
@@ -84,8 +89,8 @@ def get_logs(
             items = [
                 {"meal_type": "breakfast", "name": "Breakfast", "summary": "Oats with milk & fruits", "calories": round(t_cal * 0.25, 1), "protein": round(t_prot * 0.25, 1), "carbs": round(t_carbs * 0.25, 1), "fats": round(t_fats * 0.25, 1), "completed": False},
                 {"meal_type": "lunch", "name": "Lunch", "summary": "Rice, dal & vegetables", "calories": round(t_cal * 0.35, 1), "protein": round(t_prot * 0.35, 1), "carbs": round(t_carbs * 0.35, 1), "fats": round(t_fats * 0.35, 1), "completed": False},
-                {"meal_type": "dinner", "name": "Dinner", "summary": "Chapati, paneer sabzi", "calories": round(t_cal * 0.30, 1), "protein": round(t_prot * 0.30, 1), "carbs": round(t_carbs * 0.30, 1), "fats": round(t_fats * 0.30, 1), "completed": False},
-                {"meal_type": "snack", "name": "Snacks", "summary": "Nuts & fresh fruit", "calories": round(t_cal * 0.10, 1), "protein": round(t_prot * 0.10, 1), "carbs": round(t_carbs * 0.10, 1), "fats": round(t_fats * 0.10, 1), "completed": False}
+                {"meal_type": "snack", "name": "Snacks", "summary": "Nuts & fresh fruit", "calories": round(t_cal * 0.10, 1), "protein": round(t_prot * 0.10, 1), "carbs": round(t_carbs * 0.10, 1), "fats": round(t_fats * 0.10, 1), "completed": False},
+                {"meal_type": "dinner", "name": "Dinner", "summary": "Chapati, paneer sabzi", "calories": round(t_cal * 0.30, 1), "protein": round(t_prot * 0.30, 1), "carbs": round(t_carbs * 0.30, 1), "fats": round(t_fats * 0.30, 1), "completed": False}
             ]
         
         # Fresh log for today initialized with 0 completed calories

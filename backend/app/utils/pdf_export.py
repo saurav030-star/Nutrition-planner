@@ -234,7 +234,12 @@ def generate_meal_plan_pdf(
             Paragraph("", table_cell),
         ])
         
-        for meal in day.get("meals", []):
+        def meal_order_key(m):
+            mt = str(m.get("meal_type", "")).lower()
+            order = {"breakfast": 0, "lunch": 1, "snack": 2, "snacks": 2, "dinner": 3}
+            return order.get(mt, 4)
+
+        for meal in sorted(day.get("meals", []), key=meal_order_key):
             meal_label = f"<b>{meal.get('meal_type', '').capitalize()}</b><br/>{meal.get('prep_time_minutes', 15) + meal.get('cook_time_minutes', 10)}m"
             recipe_text = f"<b>{meal.get('name')}</b><br/><font color='#64748B'>{meal.get('description', '')[:75]}...</font>"
             
