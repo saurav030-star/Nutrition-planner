@@ -1,20 +1,25 @@
 function getApiBase(): string {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!envUrl) {
-    if (typeof window !== "undefined") {
-      return "/api";
+  if (envUrl) {
+    let url = envUrl.trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = `https://${url}`;
     }
-    return "http://127.0.0.1:8000/api";
+    url = url.replace(/\/+$/, "");
+    if (!url.endsWith("/api")) {
+      url = `${url}/api`;
+    }
+    return url;
   }
-  let url = envUrl.trim();
-  if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
-    url = `https://${url}`;
+
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://127.0.0.1:8000/api";
+    }
+    return "/api";
   }
-  url = url.replace(/\/+$/, "");
-  if (!url.endsWith("/api")) {
-    url = `${url}/api`;
-  }
-  return url;
+
+  return "http://127.0.0.1:8000/api";
 }
 
 const API_BASE = getApiBase();
