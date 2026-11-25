@@ -131,8 +131,7 @@ export default function PlannerPage() {
       setSelectedDayIndex(0);
     },
     onError: (err: any) => {
-      const detail = err?.response?.data?.detail;
-      const msg = typeof detail === "string" ? detail : detail?.message || "LangGraph constraint verification could not find a compliant plan after 3 retries.";
+      const msg = err?.message || err?.detail || (typeof err === "string" ? err : "Failed to generate meal plan. Please ensure the backend server is running and try again.");
       setGenerationError(msg);
     },
   });
