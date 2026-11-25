@@ -58,7 +58,7 @@ class GroceryCategory(BaseModel):
     items: List[str]
 
 class MealPlanGenerateRequest(BaseModel):
-    duration_days: int = Field(default=7, ge=1, le=14)
+    duration_days: int = Field(default=7, ge=1, le=90)
     target_calories_override: Optional[float] = None
     strict_allergies_override: Optional[List[str]] = None
     diet_type_override: Optional[str] = None

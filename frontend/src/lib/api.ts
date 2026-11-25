@@ -78,7 +78,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     let errorMsg = `HTTP Error ${response.status}`;
     try {
       const errJson = await response.json();
-      errorMsg = errJson.detail || errJson.message || errorMsg;
+      if (typeof errJson.detail === "string") {
+        errorMsg = errJson.detail;
+      } else if (Array.isArray(errJson.detail)) {
+        errorMsg = errJson.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join("; ");
+      } else if (typeof errJson.detail === "object" && errJson.detail !== null) {
+        errorMsg = JSON.stringify(errJson.detail);
+      } else if (typeof errJson.message === "string") {
+        errorMsg = errJson.message;
+      }
     } catch (_) {}
     throw new Error(errorMsg);
   }

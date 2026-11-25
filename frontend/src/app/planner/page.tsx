@@ -125,13 +125,14 @@ export default function PlannerPage() {
       return res;
     },
     onSuccess: (data) => {
+      setGenerationError(null);
       queryClient.setQueryData(["activeMealPlan"], data);
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       queryClient.invalidateQueries({ queryKey: ["nutritionLogs"] });
       setSelectedDayIndex(0);
     },
     onError: (err: any) => {
-      const msg = err?.message || err?.detail || (typeof err === "string" ? err : "Failed to generate meal plan. Please ensure the backend server is running and try again.");
+      const msg = err?.message || (typeof err === "string" ? err : "Failed to generate meal plan. Please check your inputs and try again.");
       setGenerationError(msg);
     },
   });
