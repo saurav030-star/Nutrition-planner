@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, getAuthToken } from "@/lib/api";
+import { api, getAuthToken, removeAuthToken } from "@/lib/api";
 import MacroChart from "@/components/MacroChart";
 import { 
   Flame, 
@@ -45,7 +45,12 @@ export default function DashboardPage() {
     const token = getAuthToken();
     if (!token) {
       router.push("/login");
+      return;
     }
+    api.getMe().catch(() => {
+      removeAuthToken();
+      router.push("/login?session_expired=true");
+    });
   }, [router]);
 
   // Fetch active meal plan

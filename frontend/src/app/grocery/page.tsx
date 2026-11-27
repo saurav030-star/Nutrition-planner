@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { api, getAuthToken } from "@/lib/api";
+import { api, getAuthToken, removeAuthToken } from "@/lib/api";
 import { MealPlan } from "@/lib/types";
 import { 
   ShoppingBag, 
@@ -34,7 +34,12 @@ export default function GroceryPage() {
     const token = getAuthToken();
     if (!token) {
       router.push("/login");
+      return;
     }
+    api.getMe().catch(() => {
+      removeAuthToken();
+      router.push("/login?session_expired=true");
+    });
   }, [router]);
 
   const { data: activePlan, isLoading } = useQuery<MealPlan>({

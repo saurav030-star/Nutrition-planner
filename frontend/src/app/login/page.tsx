@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, setAuthToken, setStoredUser } from "@/lib/api";
@@ -12,6 +12,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionNotice, setSessionNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("session_expired") || params.get("expired")) {
+        setSessionNotice(true);
+      }
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +83,16 @@ export default function LoginPage() {
             Access your autonomous multi-agent nutrition pipeline & logs
           </p>
         </div>
+
+        {sessionNotice && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900">Your session has expired or was reset.</p>
+              <p className="text-[11px] text-amber-700 mt-0.5">Please sign in again or click below for instant 1-Click Demo Login.</p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">

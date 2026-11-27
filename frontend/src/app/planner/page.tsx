@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, getAuthToken } from "@/lib/api";
+import { api, getAuthToken, removeAuthToken } from "@/lib/api";
 import MealCard from "@/components/MealCard";
 import { MealPlan, DayMealPlan } from "@/lib/types";
 import { 
@@ -20,7 +20,8 @@ import {
   Minus,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowRight
 } from "lucide-react";
 
 const ALLERGEN_OPTIONS = [
@@ -62,7 +63,13 @@ export default function PlannerPage() {
     const token = getAuthToken();
     if (!token) {
       router.push("/login");
+      return;
     }
+    // Verify token validity against the backend
+    api.getMe().catch(() => {
+      removeAuthToken();
+      router.push("/login?session_expired=true");
+    });
   }, [router]);
 
   const handleDownloadPdf = async () => {
@@ -178,13 +185,28 @@ export default function PlannerPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Error Alert Banner if 422 LangGraph Constraint Verification Rejection */}
+      {/* Error Alert Banner */}
       {generationError && (
         <div className="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-start gap-3 text-rose-900 text-xs">
           <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="font-bold text-rose-950">Multi-Agent Constraint Verification Alert</h4>
+          <div className="space-y-1.5 flex-1">
+            <h4 className="font-bold text-rose-950">
+              {generationError.toLowerCase().includes("credential") || generationError.toLowerCase().includes("session") || generationError.toLowerCase().includes("401") || generationError.toLowerCase().includes("unauthorized")
+                ? "Authentication Session Notice"
+                : "Multi-Agent Constraint Verification Alert"}
+            </h4>
             <p className="text-rose-700 leading-relaxed">{generationError}</p>
+            {(generationError.toLowerCase().includes("credential") || generationError.toLowerCase().includes("session") || generationError.toLowerCase().includes("401") || generationError.toLowerCase().includes("unauthorized")) && (
+              <div className="pt-1">
+                <Link
+                  href="/login?session_expired=true"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded-xl shadow-sm transition"
+                >
+                  <span>Sign In or Use 1-Click Login</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getAuthToken, removeAuthToken, getStoredUser } from "@/lib/api";
+import { getAuthToken, removeAuthToken, getStoredUser, setStoredUser, api } from "@/lib/api";
 import { 
   Sparkles, 
   Activity,
@@ -25,6 +25,17 @@ export default function Navbar() {
     const token = getAuthToken();
     if (token) {
       setUser(getStoredUser() || { email: "User", full_name: "Nutrition Pro" });
+      api.getMe().then((u) => {
+        if (u) {
+          setUser(u);
+          setStoredUser(u);
+        }
+      }).catch(() => {
+        removeAuthToken();
+        setUser(null);
+      });
+    } else {
+      setUser(null);
     }
   }, [pathname]);
 

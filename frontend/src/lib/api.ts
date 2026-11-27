@@ -75,7 +75,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   });
 
   if (!response.ok) {
-    let errorMsg = `HTTP Error ${response.status}`;
+    if (response.status === 401) {
+      removeAuthToken();
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/register")) {
+        window.location.href = "/login?session_expired=true";
+      }
+    }
+
+    let errorMsg = response.status === 401 ? "Your session has expired. Please sign in again." : `HTTP Error ${response.status}`;
     try {
       const errJson = await response.json();
       if (typeof errJson.detail === "string") {
